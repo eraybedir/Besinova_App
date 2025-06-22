@@ -22,15 +22,15 @@ class ShoppingOptimizer {
   }) {
     try {
       print("=== COMPREHENSIVE OPTIMIZATION SERVICE: Starting optimization ===");
+    
+    // Preprocess data
+    List<Product> filteredProducts = DataPreprocessor.preprocessData(products);
       
-      // Preprocess data
-      List<Product> filteredProducts = DataPreprocessor.preprocessData(products);
-      
-      if (filteredProducts.isEmpty) {
+    if (filteredProducts.isEmpty) {
         print("ERROR: No products available after preprocessing");
-        return null;
-      }
-      
+      return null;
+    }
+    
       // Calculate nutrition targets
       double tdee = _calculateTDEE(age, gender, weight, height, activityLevel);
       Map<String, double> macroTargets = _getMacroTargets(tdee, goal);
@@ -71,39 +71,39 @@ class ShoppingOptimizer {
       
       if (result['items'].isEmpty) {
         print("ERROR: No items selected in optimization");
-        return null;
-      }
-      
-      // Create shopping items
-      List<ShoppingItem> shoppingItems = (result['items'] as List<Map<String, dynamic>>)
-          .map((item) => ShoppingItem(
+      return null;
+    }
+    
+    // Create shopping items
+    List<ShoppingItem> shoppingItems = (result['items'] as List<Map<String, dynamic>>)
+        .map((item) => ShoppingItem(
                 id: item['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
-                name: item['name'],
+              name: item['name'],
                 productName: item['name'],
-                market: item['market'],
-                quantity: item['quantity'],
-                pricePerUnit: item['price_per_unit'],
-                totalPrice: item['total_price'],
+              market: item['market'],
+              quantity: item['quantity'],
+              pricePerUnit: item['price_per_unit'],
+              totalPrice: item['total_price'],
                 price: item['price_per_unit'],
-                weightPerUnit: item['weight_per_unit'],
-                totalWeight: item['total_weight'],
-                calories: item['calories'],
-                protein: item['protein'],
-                carbs: item['carbs'],
-                fat: item['fat'],
-                category: item['category'],
+              weightPerUnit: item['weight_per_unit'],
+              totalWeight: item['total_weight'],
+              calories: item['calories'],
+              protein: item['protein'],
+              carbs: item['carbs'],
+              fat: item['fat'],
+              category: item['category'],
                 mainGroup: item['category'],
                 unit: 'adet',
                 imageUrl: item['image_url'] ?? '',
                 isChecked: false,
-              ))
-          .toList();
-      
-      // Create shopping result
-      ShoppingResult shoppingResult = ShoppingResult(
-        totalCost: result['total_cost'],
-        totalWeight: result['total_weight'],
-        totalItems: result['total_items'],
+            ))
+        .toList();
+    
+    // Create shopping result
+    ShoppingResult shoppingResult = ShoppingResult(
+      totalCost: result['total_cost'],
+      totalWeight: result['total_weight'],
+      totalItems: result['total_items'],
         budgetUsage: (result['total_cost'] / budget) * 100,
         calories: result['achieved_calories'],
         protein: result['achieved_protein'],
@@ -118,8 +118,8 @@ class ShoppingOptimizer {
       );
       
       print("SUCCESS: Comprehensive optimization completed successfully!");
-      print("Selected ${shoppingItems.length} different products");
-      print("Total cost: ${result['total_cost'].toStringAsFixed(2)} TL");
+    print("Selected ${shoppingItems.length} different products");
+    print("Total cost: ${result['total_cost'].toStringAsFixed(2)} TL");
       print("Budget usage: ${((result['total_cost'] / budget) * 100).toStringAsFixed(1)}%");
       print("Nutrition achieved:");
       print("  Calories: ${result['achieved_calories'].toStringAsFixed(0)} / ${targetCalories.toStringAsFixed(0)} kcal (${((result['achieved_calories'] / targetCalories) * 100).toStringAsFixed(1)}%)");
@@ -387,22 +387,22 @@ class ShoppingOptimizer {
     for (MapEntry<int, int> entry in selectedQuantities.entries) {
       Product? product = _findProductById(products, entry.key);
       if (product != null && entry.value > 0) {
-        items.add({
+      items.add({
           'id': product.id.toString(),
-          'name': product.name,
-          'market': product.market,
+        'name': product.name,
+        'market': product.market,
           'quantity': entry.value, // Integer quantity
-          'price_per_unit': product.price,
+        'price_per_unit': product.price,
           'total_price': product.price * entry.value,
-          'weight_per_unit': product.weightG ?? 1000,
+        'weight_per_unit': product.weightG ?? 1000,
           'total_weight': (product.weightG ?? 1000) * entry.value,
-          'calories': product.caloriesPer100g ?? 0,
-          'protein': product.proteinPer100g ?? 0,
-          'carbs': product.carbsPer100g ?? 0,
-          'fat': product.fatPer100g ?? 0,
-          'category': product.mainGroup ?? 'other',
+        'calories': product.caloriesPer100g ?? 0,
+        'protein': product.proteinPer100g ?? 0,
+        'carbs': product.carbsPer100g ?? 0,
+        'fat': product.fatPer100g ?? 0,
+        'category': product.mainGroup ?? 'other',
           'image_url': product.imageUrl,
-        });
+      });
       }
     }
     
@@ -438,14 +438,14 @@ class ShoppingOptimizer {
         
         if (value > bestValue) {
           bestValue = value;
-          bestProduct = product;
+        bestProduct = product;
         }
       }
     }
     
     return bestProduct;
   }
-  
+
   /// Find the best product for nutrition optimization
   static Product? _findBestProductForNutrition(
     List<Product> products,
@@ -518,7 +518,7 @@ class ShoppingOptimizer {
     
     return bestProduct;
   }
-  
+
   /// Get maximum quantity for a product based on category and constraints
   static int _getMaxQuantityForProduct(Product product) {
     String category = product.mainGroup ?? 'other';
