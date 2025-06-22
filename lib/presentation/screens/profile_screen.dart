@@ -20,19 +20,13 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   // Kullanıcıya sunulan hazır avatarlar (emoji)
-  final List<String> _avatars = [
-    '🍏',
-    '🥑',
-    '🍉',
-    '🍔',
-    '👩‍💻',
-    '🧑‍🍳',
-    '🏃‍♂️',
-    '🏋️‍♀️',
-    '🦸‍♂️',
-    '🦸‍♀️'
+  final List<String> _avatarOptions = [
+    'Runner',
+    'Fitness',
+    'Hero',
+    'Heroine'
   ];
-  String _selectedAvatar = '🍏'; // Ekranda geçici olarak tutulan avatar
+  String _selectedAvatar = 'Runner'; // Default avatar
   Map<String, dynamic>? _profileData;
 
   @override
@@ -79,6 +73,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   /// Avatar seçimi için dialog açar ve seçilen avatarı UserProvider'a kaydeder.
   void _chooseAvatar() async {
+    const Color deepFern = Color(0xFF52796F);
+    
     String? chosen = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
@@ -86,17 +82,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
         content: Wrap(
           spacing: 12,
           runSpacing: 12,
-          children: _avatars.map((avatar) {
+          children: _avatarOptions.map((avatar) {
             return GestureDetector(
               onTap: () => Navigator.of(context).pop(avatar),
-              child: CircleAvatar(
-                radius: 28,
-                backgroundColor: avatar == _selectedAvatar
-                    ? Colors.green[200]
-                    : Colors.grey[200],
-                child: Text(
-                  avatar,
-                  style: const TextStyle(fontSize: 32),
+              child: Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: _selectedAvatar == avatar
+                      ? deepFern
+                      : Colors.white.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: _selectedAvatar == avatar
+                        ? deepFern
+                        : Colors.white.withValues(alpha: 0.3),
+                    width: 2,
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    avatar,
+                    style: TextStyle(
+                      color: _selectedAvatar == avatar
+                          ? Colors.white
+                          : Colors.white.withValues(alpha: 0.7),
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
             );

@@ -24,9 +24,9 @@ void main() async {
   print("Initializing optimization service...");
   bool optimizationInitialized = await OptimizationService.initialize();
   if (optimizationInitialized) {
-    print("✅ Optimization service initialized successfully");
+    print("SUCCESS: Optimization service initialized successfully");
   } else {
-    print("⚠️  Optimization service initialized with fallback data");
+    print("WARNING: Optimization service initialized with fallback data");
   }
 
   runApp(const BesinovaApp());

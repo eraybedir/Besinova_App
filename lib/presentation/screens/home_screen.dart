@@ -60,7 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
       
       // Eğer CSV'den ürün yüklenemezse, örnek ürünleri kullan
       if (products.isEmpty) {
-        print('⚠️ No products loaded from CSV, using sample products');
+        print('WARNING: No products loaded from CSV, using sample products');
         products = CsvDataLoader.getSampleProducts();
       }
 
@@ -70,10 +70,15 @@ class _HomeScreenState extends State<HomeScreen> {
         _initializePages();
       });
       
-      print('✅ Products loaded successfully: ${_productList.length} products');
+      if (_productList.isNotEmpty) {
+        print('SUCCESS: Products loaded successfully: ${_productList.length} products');
+      } else {
+        print('WARNING: No products loaded, using sample products');
+        _productList = CsvDataLoader.getSampleProducts();
+      }
     } catch (e) {
-      print('❌ Error loading products: $e');
-      // Hata durumunda örnek ürünleri kullan
+      print('ERROR: Error loading products: $e');
+      // Use sample products in case of error
       setState(() {
         _productList = CsvDataLoader.getSampleProducts();
         _isLoading = false;

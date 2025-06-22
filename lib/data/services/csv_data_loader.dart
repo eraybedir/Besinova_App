@@ -24,7 +24,7 @@ class CsvDataLoader {
       print("Total lines in CSV: ${lines.length}");
       
       if (lines.isEmpty) {
-        print("❌ CSV file is empty");
+        print("ERROR: CSV file is empty");
         return [];
       }
       
@@ -37,7 +37,7 @@ class CsvDataLoader {
       List<String> requiredHeaders = ['category', 'subcategory', 'item_category', 'name', 'price', 'market', 'image_url', 'calories', 'protein', 'carbs', 'fat'];
       for (String required in requiredHeaders) {
         if (!headers.contains(required)) {
-          print("❌ Missing required header: $required");
+          print("ERROR: Missing required header: $required");
           print("Available headers: $headers");
           return [];
         }
@@ -53,7 +53,7 @@ class CsvDataLoader {
         try {
           String line = lines[i].trim();
           if (line.isEmpty) {
-            print("⚠️  Skipping empty line $i");
+            print("WARNING: Skipping empty line $i");
             continue;
           }
           
@@ -61,7 +61,7 @@ class CsvDataLoader {
           List<String> values = _parseCsvLine(line);
           
           if (values.length < headers.length) {
-            print("⚠️  Skipping line $i: insufficient columns (${values.length} < ${headers.length})");
+            print("WARNING: Skipping line $i: insufficient columns (${values.length} < ${headers.length})");
             continue;
           }
           
@@ -77,7 +77,7 @@ class CsvDataLoader {
           
           // Validate required fields
           if (rowMap['name'] == null || rowMap['name'].toString().trim().isEmpty) {
-            print("⚠️  Skipping row $i: missing name");
+            print("WARNING: Skipping row $i: missing name");
             continue;
           }
           
@@ -87,13 +87,13 @@ class CsvDataLoader {
           productId++;
           
         } catch (e) {
-          print("⚠️  Skipping row $i due to error: $e");
-          print("⚠️  Row data: ${lines[i]}");
+          print("WARNING: Skipping row $i due to error: $e");
+          print("WARNING: Row data: ${lines[i]}");
           continue;
         }
       }
       
-      print("✅ Successfully loaded ${products.length} products from CSV");
+      print("SUCCESS: Successfully loaded ${products.length} products from CSV");
       
       // Print some statistics
       if (products.isNotEmpty) {
@@ -121,7 +121,7 @@ class CsvDataLoader {
       return products;
       
     } catch (e) {
-      print("❌ Error loading CSV data: $e");
+      print("ERROR: Error loading CSV data: $e");
       return [];
     }
   }
@@ -158,7 +158,7 @@ class CsvDataLoader {
       
       final File file = File(filePath);
       if (!await file.exists()) {
-        print("❌ File does not exist: $filePath");
+        print("ERROR: File does not exist: $filePath");
         return [];
       }
       
@@ -168,7 +168,7 @@ class CsvDataLoader {
       List<List<dynamic>> csvTable = const CsvToListConverter().convert(csvData);
       
       if (csvTable.isEmpty) {
-        print("❌ CSV file is empty");
+        print("ERROR: CSV file is empty");
         return [];
       }
       
@@ -200,17 +200,17 @@ class CsvDataLoader {
           productId++;
           
         } catch (e) {
-          print("⚠️  Skipping row $i due to error: $e");
-          print("⚠️  Row data: ${csvTable[i]}");
+          print("WARNING: Skipping row $i due to error: $e");
+          print("WARNING: Row data: ${csvTable[i]}");
           continue;
         }
       }
       
-      print("✅ Successfully loaded ${products.length} products from file");
+      print("SUCCESS: Successfully loaded ${products.length} products from file");
       return products;
       
     } catch (e) {
-      print("❌ Error loading file data: $e");
+      print("ERROR: Error loading file data: $e");
       return [];
     }
   }

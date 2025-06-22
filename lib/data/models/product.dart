@@ -96,11 +96,11 @@ class Product {
         createdAt: DateTime.now(),
       );
       
-      print("✅ Successfully created product: ${product.name}");
+      print("SUCCESS: Successfully created product: ${product.name}");
       return product;
     } catch (e) {
-      print("❌ Error creating product from row $id: $e");
-      print("❌ Row data: $row");
+      print("ERROR: Error creating product from row $id: $e");
+      print("ERROR: Row data: $row");
       rethrow;
     }
   }

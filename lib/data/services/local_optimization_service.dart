@@ -17,16 +17,16 @@ class LocalOptimizationService {
       List<Product> products = await CsvDataLoader.loadProductsFromCsv();
       
       if (products.isEmpty) {
-        print("⚠️  No products loaded from CSV, using sample data");
+        print("WARNING: No products loaded from CSV, using sample data");
         products = CsvDataLoader.getSampleProducts();
       }
       
       _cachedProducts = products;
-      print("✅ LocalOptimizationService initialized with ${products.length} products");
+      print("SUCCESS: LocalOptimizationService initialized with ${products.length} products");
       return true;
       
     } catch (e) {
-      print("❌ Error initializing LocalOptimizationService: $e");
+      print("ERROR: Error initializing LocalOptimizationService: $e");
       // Fallback to sample data
       _cachedProducts = CsvDataLoader.getSampleProducts();
       return false;
@@ -36,7 +36,7 @@ class LocalOptimizationService {
   /// Get cached products
   static List<Product> getProducts() {
     if (_cachedProducts == null) {
-      print("⚠️  Products not loaded, using sample data");
+      print("WARNING: Products not loaded, using sample data");
       _cachedProducts = CsvDataLoader.getSampleProducts();
     }
     return _cachedProducts!;
@@ -72,18 +72,18 @@ class LocalOptimizationService {
       );
       
       if (result != null) {
-        print("✅ Optimization completed successfully!");
+        print("SUCCESS: Optimization completed successfully!");
         print("Selected ${result.shoppingItems.length} products");
         print("Total cost: ${result.shoppingResult.totalCost.toStringAsFixed(2)} TL");
         print("Budget usage: ${result.shoppingResult.budgetUsage.toStringAsFixed(1)}%");
       } else {
-        print("❌ Optimization failed");
+        print("ERROR: Optimization failed");
       }
       
       return result;
       
     } catch (e) {
-      print("❌ Error running optimization: $e");
+      print("ERROR: Error running optimization: $e");
       return null;
     }
   }
@@ -123,18 +123,18 @@ class LocalOptimizationService {
       );
       
       if (result != null) {
-        print("✅ Optimization completed successfully!");
+        print("SUCCESS: Optimization completed successfully!");
         print("Selected ${result.shoppingItems.length} products");
         print("Total cost: ${result.shoppingResult.totalCost.toStringAsFixed(2)} TL");
         print("Budget usage: ${result.shoppingResult.budgetUsage.toStringAsFixed(1)}%");
       } else {
-        print("❌ Optimization failed");
+        print("ERROR: Optimization failed");
       }
       
       return result;
       
     } catch (e) {
-      print("❌ Error running optimization: $e");
+      print("ERROR: Error running optimization: $e");
       return null;
     }
   }
@@ -193,7 +193,7 @@ class LocalOptimizationService {
   /// Clear cached data
   static void clearCache() {
     _cachedProducts = null;
-    print("✅ Cache cleared");
+    print("SUCCESS: Cache cleared");
   }
   
   /// Check if service is ready

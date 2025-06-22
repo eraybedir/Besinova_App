@@ -177,11 +177,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final userProvider = Provider.of<UserProvider>(context, listen: false);
       if (userProvider.user == null) {
-        print('🔧 SettingsScreen - UserProvider user is null, loading user data');
+        print('DEBUG: SettingsScreen - UserProvider user is null, loading user data');
         userProvider.loadUserData();
-      } else {
-        print('🔧 SettingsScreen - UserProvider user loaded, budget: ${userProvider.budget}');
       }
+      print('DEBUG: SettingsScreen - UserProvider user loaded, budget: ${userProvider.budget}');
     });
   }
 
@@ -668,9 +667,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final currentBudget = userProvider.budget;
     final hasSetBudget = userProvider.hasSetBudget;
     
-    print('🔧 SettingsScreen._buildBudgetSetting - currentBudget: $currentBudget');
-    print('🔧 SettingsScreen._buildBudgetSetting - userProvider.budget: ${userProvider.budget}');
-    print('🔧 SettingsScreen._buildBudgetSetting - hasSetBudget: $hasSetBudget');
+    print('DEBUG: SettingsScreen._buildBudgetSetting - currentBudget: $currentBudget');
+    print('DEBUG: SettingsScreen._buildBudgetSetting - userProvider.budget: ${userProvider.budget}');
+    print('DEBUG: SettingsScreen._buildBudgetSetting - hasSetBudget: $hasSetBudget');
 
     return ListTile(
       contentPadding: EdgeInsets.zero,
@@ -882,13 +881,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
               onPressed: () async {
-                print('🔧 Budget dialog save button pressed with selectedBudget: $selectedBudget');
+                print('DEBUG: Budget dialog save button pressed with selectedBudget: $selectedBudget');
                 await userProvider.setBudget(selectedBudget);
-                print('🔧 Budget saved, closing dialog');
+                print('DEBUG: Budget saved, closing dialog');
                 Navigator.of(context).pop();
                 // Force rebuild of the settings screen to show updated budget
                 if (mounted) {
-                  print('🔧 SettingsScreen setState() called to rebuild UI');
+                  print('DEBUG: SettingsScreen setState() called to rebuild UI');
                   setState(() {});
                 }
                 // Also notify the UserProvider to ensure UI updates

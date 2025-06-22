@@ -42,30 +42,32 @@ class UserProvider extends ChangeNotifier {
   Future<void> loadUserData() async {
     if (_isLoading) return;
 
-    print('🔧 UserProvider.loadUserData() called');
+    print('DEBUG: UserProvider.loadUserData() called');
     _isLoading = true;
     notifyListeners();
 
     try {
       await StorageService.init();
-      _user = await StorageService.loadUser();
-      _cachedLastLogin = _user?.lastLogin;
+      User loadedUser = await StorageService.loadUser();
       
-      // Check if user has explicitly set a budget (not just default value)
-      _hasSetBudget = _user?.budget != null && _user!.budget != AppConstants.defaultBudget;
+      _user = loadedUser;
+      _cachedLastLogin = loadedUser.lastLogin;
+      _hasSetBudget = loadedUser.budget != AppConstants.defaultBudget;
+      _isLoading = false;
       
-      print('🔧 UserProvider.loadUserData() - loaded user: ${_user?.name}, budget: ${_user?.budget}');
-      print('🔧 UserProvider.loadUserData() - hasSetBudget: $_hasSetBudget');
+      print('DEBUG: UserProvider.loadUserData() - loaded user: ${_user?.name}, budget: ${_user?.budget}');
+      print('DEBUG: UserProvider.loadUserData() - hasSetBudget: $_hasSetBudget');
+      
     } catch (e) {
-      print('🔧 UserProvider.loadUserData() - error loading user: $e');
-      // If loading fails, create default user
+      print('DEBUG: UserProvider.loadUserData() - error loading user: $e');
+      // Create default user if loading fails
       _user = _createDefaultUser();
       _hasSetBudget = false; // Default user hasn't set budget
-      print('🔧 UserProvider.loadUserData() - created default user with budget: ${_user?.budget}');
-    } finally {
       _isLoading = false;
-      notifyListeners();
+      print('DEBUG: UserProvider.loadUserData() - created default user with budget: ${_user?.budget}');
     }
+    
+    notifyListeners();
   }
 
   User _createDefaultUser() => User(
@@ -87,22 +89,25 @@ class UserProvider extends ChangeNotifier {
 
   /// Update user data
   Future<void> updateUser(User updatedUser) async {
-    print('🔧 UserProvider.updateUser() called with budget: ${updatedUser.budget}');
-    print('🔧 UserProvider.updateUser() - current _user budget: ${_user?.budget}');
-    print('🔧 UserProvider.updateUser() - _user == updatedUser: ${_user == updatedUser}');
+    print('DEBUG: UserProvider.updateUser() called with budget: ${updatedUser.budget}');
+    print('DEBUG: UserProvider.updateUser() - current _user budget: ${_user?.budget}');
+    print('DEBUG: UserProvider.updateUser() - _user == updatedUser: ${_user == updatedUser}');
     
+    // Check if users are identical to avoid unnecessary updates
     if (_user == updatedUser) {
-      print('🔧 UserProvider.updateUser() - users are identical, returning early');
+      print('DEBUG: UserProvider.updateUser() - users are identical, returning early');
       return;
     }
-
+    
     _user = updatedUser;
     _cachedLastLogin = updatedUser.lastLogin;
-    print('🔧 UserProvider.updateUser() - _user updated, new budget: ${_user?.budget}');
+    _hasSetBudget = updatedUser.budget != AppConstants.defaultBudget;
     
+    print('DEBUG: UserProvider.updateUser() - _user updated, new budget: ${_user?.budget}');
+    
+    // Save to storage
     await StorageService.saveUser(updatedUser);
-    print('🔧 UserProvider.updateUser() - user saved to storage, budget: ${_user?.budget}');
-    notifyListeners();
+    print('DEBUG: UserProvider.updateUser() - user saved to storage, budget: ${_user?.budget}');
   }
 
   /// Update specific user field
@@ -122,36 +127,38 @@ class UserProvider extends ChangeNotifier {
     double? budget,
     int? notificationCount,
   }) async {
-    print('🔧 UserProvider.updateUserField() called with budget: $budget');
-    print('🔧 UserProvider.updateUserField() - _user is null: ${_user == null}');
+    print('DEBUG: UserProvider.updateUserField() called with budget: $budget');
+    print('DEBUG: UserProvider.updateUserField() - _user is null: ${_user == null}');
     
+    // Ensure user exists
     if (_user == null) {
-      print('🔧 UserProvider.updateUserField() - _user is null, loading user data first');
+      print('DEBUG: UserProvider.updateUserField() - _user is null, loading user data first');
       await loadUserData();
+      
       if (_user == null) {
-        print('🔧 UserProvider.updateUserField() - still null after loading, creating default user');
+        print('DEBUG: UserProvider.updateUserField() - still null after loading, creating default user');
         _user = _createDefaultUser();
       }
     }
 
-    final updatedUser = _user!.copyWith(
-      name: name,
-      email: email,
-      height: height,
-      weight: weight,
-      age: age,
-      gender: gender,
-      activityLevel: activityLevel,
-      goal: goal,
-      avatar: avatar,
-      loginCount: loginCount,
-      lastLogin: lastLogin,
-      completedGoals: completedGoals,
-      budget: budget,
-      notificationCount: notificationCount,
+    User updatedUser = _user!.copyWith(
+      name: name ?? _user!.name,
+      email: email ?? _user!.email,
+      height: height ?? _user!.height,
+      weight: weight ?? _user!.weight,
+      age: age ?? _user!.age,
+      gender: gender ?? _user!.gender,
+      activityLevel: activityLevel ?? _user!.activityLevel,
+      goal: goal ?? _user!.goal,
+      avatar: avatar ?? _user!.avatar,
+      loginCount: loginCount ?? _user!.loginCount,
+      lastLogin: lastLogin ?? _user!.lastLogin,
+      completedGoals: completedGoals ?? _user!.completedGoals,
+      budget: budget ?? _user!.budget,
+      notificationCount: notificationCount ?? _user!.notificationCount,
     );
 
-    print('🔧 UserProvider.updateUserField() - created updatedUser with budget: ${updatedUser.budget}');
+    print('DEBUG: UserProvider.updateUserField() - created updatedUser with budget: ${updatedUser.budget}');
     await updateUser(updatedUser);
   }
 
@@ -164,14 +171,14 @@ class UserProvider extends ChangeNotifier {
 
   /// Update budget
   Future<void> setBudget(double newBudget) async {
-    print('🔧 UserProvider.setBudget called with: $newBudget');
-    print('🔧 Current budget before update: ${_user?.budget ?? 'null'}');
+    print('DEBUG: UserProvider.setBudget called with: $newBudget');
+    print('DEBUG: Current budget before update: ${_user?.budget ?? 'null'}');
     
-    _hasSetBudget = true; // Mark that user has explicitly set a budget
+    _hasSetBudget = true;
     await updateUserField(budget: newBudget);
     
-    print('🔧 Budget after update: ${_user?.budget ?? 'null'}');
-    print('🔧 UserProvider.notifyListeners() called');
+    print('DEBUG: Budget after update: ${_user?.budget ?? 'null'}');
+    print('DEBUG: UserProvider.notifyListeners() called');
   }
 
   /// Increment login count

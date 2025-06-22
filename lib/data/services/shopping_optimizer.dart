@@ -27,7 +27,7 @@ class ShoppingOptimizer {
       List<Product> filteredProducts = DataPreprocessor.preprocessData(products);
       
       if (filteredProducts.isEmpty) {
-        print("❌ No products available after preprocessing");
+        print("ERROR: No products available after preprocessing");
         return null;
       }
       
@@ -70,7 +70,7 @@ class ShoppingOptimizer {
       );
       
       if (result['items'].isEmpty) {
-        print("❌ No items selected in optimization");
+        print("ERROR: No items selected in optimization");
         return null;
       }
       
@@ -117,7 +117,7 @@ class ShoppingOptimizer {
         shoppingResult: shoppingResult,
       );
       
-      print("✅ Comprehensive optimization completed successfully!");
+      print("SUCCESS: Comprehensive optimization completed successfully!");
       print("Selected ${shoppingItems.length} different products");
       print("Total cost: ${result['total_cost'].toStringAsFixed(2)} TL");
       print("Budget usage: ${((result['total_cost'] / budget) * 100).toStringAsFixed(1)}%");
@@ -130,7 +130,7 @@ class ShoppingOptimizer {
       return optimizationResult;
       
     } catch (e) {
-      print("❌ Error in optimization: $e");
+      print("ERROR: Error in optimization: $e");
       return null;
     }
   }

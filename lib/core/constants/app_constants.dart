@@ -29,7 +29,7 @@ class AppConstants {
   static const String defaultGender = 'Erkek';
   static const String defaultActivityLevel = 'Orta';
   static const String defaultGoal = 'Sağlıklı Yaşam';
-  static const String defaultAvatar = '🍏';
+  static const String defaultAvatar = 'User';
   static const int defaultLoginCount = 1;
   static const double defaultBudget = 0.0;
   static const int defaultNotificationCount = 3;

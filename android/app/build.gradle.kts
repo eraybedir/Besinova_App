@@ -8,7 +8,7 @@ plugins {
 android {
     namespace = "com.example.besinova"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = "27.0.12077973" // ✅ Firebase plugin'leri ile uyumlu versiyon
+    ndkVersion = "27.0.12077973" // Firebase plugin compatible version
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -21,7 +21,7 @@ android {
 
     defaultConfig {
     applicationId = "com.example.besinova"
-    minSdk = 23 // 🔥 Burayı elle sabitliyoruz
+    minSdk = 23 // Set minimum SDK version manually
     targetSdk = flutter.targetSdkVersion
     versionCode = flutter.versionCode
     versionName = flutter.versionName
@@ -40,12 +40,12 @@ flutter {
 }
 
 dependencies {
-    // 🔥 Firebase BoM (Bill of Materials) — sürümleri senkronize tutar
-    implementation(platform("com.google.firebase:firebase-bom:33.13.0"))
+    // Firebase BoM (Bill of Materials) - keeps versions synchronized
+    implementation(platform("com.google.firebase:firebase-bom:32.7.4"))
 
-    // ⚡ Firebase servisleri buradan Flutter tarafından yönetilir
-    // Örnek: firebase-auth, firebase-core vs. Flutter pubspec.yaml'de olmalı
+    // Firebase services managed by Flutter
+    // Example: firebase-auth, firebase-core etc. should be in Flutter pubspec.yaml
 
-    // İstersen manuel eklemek için örnek:
+    // Manual addition example if needed:
     // implementation("com.google.firebase:firebase-auth-ktx")
 }

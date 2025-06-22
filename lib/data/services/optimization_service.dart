@@ -30,17 +30,17 @@ class OptimizationService {
       );
       
       if (result != null) {
-        print("✅ Optimization completed successfully!");
+        print("SUCCESS: Optimization completed successfully!");
         print("Selected ${result.shoppingItems.length} products");
         print("Total cost: ${result.shoppingResult.totalCost.toStringAsFixed(2)} TL");
         print("Budget usage: ${result.shoppingResult.budgetUsage.toStringAsFixed(1)}%");
       } else {
-        print("❌ Optimization failed");
+        print("ERROR: Optimization failed");
       }
       
       return result;
     } catch (e) {
-      print("❌ Error in optimization service: $e");
+      print("ERROR: Error in optimization service: $e");
       return null;
     }
   }
@@ -72,17 +72,17 @@ class OptimizationService {
       );
       
       if (result != null) {
-        print("✅ Optimization completed successfully!");
+        print("SUCCESS: Optimization completed successfully!");
         print("Selected ${result.shoppingItems.length} products");
         print("Total cost: ${result.shoppingResult.totalCost.toStringAsFixed(2)} TL");
         print("Budget usage: ${result.shoppingResult.budgetUsage.toStringAsFixed(1)}%");
       } else {
-        print("❌ Optimization failed");
+        print("ERROR: Optimization failed");
       }
       
       return result;
     } catch (e) {
-      print("❌ Error in optimization service: $e");
+      print("ERROR: Error in optimization service: $e");
       return null;
     }
   }
