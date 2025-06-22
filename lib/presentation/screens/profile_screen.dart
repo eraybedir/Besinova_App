@@ -21,12 +21,12 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   // Kullanıcıya sunulan hazır avatarlar (emoji)
   final List<String> _avatarOptions = [
-    'Runner',
-    'Fitness',
-    'Hero',
-    'Heroine'
+    '🏃‍♂️',
+    '💪',
+    '🦸‍♂️',
+    '🦸‍♀️'
   ];
-  String _selectedAvatar = 'Runner'; // Default avatar
+  String _selectedAvatar = '🏃‍♂️'; // Default avatar
   Map<String, dynamic>? _profileData;
 
   @override

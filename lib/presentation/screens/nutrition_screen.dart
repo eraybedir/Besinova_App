@@ -10,7 +10,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:provider/provider.dart';
 import '../../presentation/presentation.dart';
-import 'settings_screen.dart';
 
 /// Besin önerileri ekranı: Kişiselleştirilmiş besin önerileri ve makro değerleri.
 class NutritionScreen extends StatefulWidget {
@@ -31,20 +30,53 @@ class NutritionScreen extends StatefulWidget {
 
 class _NutritionScreenState extends State<NutritionScreen>
     with SingleTickerProviderStateMixin {
-  String _selectedCategory = 'Tümü';
-  List<String> categories = ['Tümü', 'Protein', 'Karbonhidrat', 'Yağ'];
+  String _searchQuery = '';
   late TabController _tabController;
+  List<Product> _favorites = [];
+  Set<int> _favoriteIds = {};
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _loadFavorites();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadFavorites() async {
+    try {
+      final favorites = await FavoritesService.getFavorites();
+      setState(() {
+        _favorites = favorites;
+        _favoriteIds = favorites.map((p) => p.id).toSet();
+      });
+    } catch (e) {
+      print('Error loading favorites: $e');
+    }
+  }
+
+  Future<void> _toggleFavorite(Product product) async {
+    try {
+      final success = await FavoritesService.toggleFavorite(product);
+      if (success) {
+        await _loadFavorites(); // Reload favorites
+      }
+    } catch (e) {
+      print('Error toggling favorite: $e');
+    }
+  }
+
+  List<Product> get _filteredProducts {
+    if (_searchQuery.isEmpty) {
+      return widget.products;
+    }
+    return widget.products.where((product) =>
+        product.name.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
   }
 
   @override
@@ -167,7 +199,7 @@ class _NutritionScreenState extends State<NutritionScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Arama ve kategori kartı
+          // Arama kartı
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -221,7 +253,7 @@ class _NutritionScreenState extends State<NutritionScreen>
                 TextField(
                   onChanged: (value) {
                     setState(() {
-                      _selectedCategory = value;
+                      _searchQuery = value;
                     });
                   },
                   style: const TextStyle(color: Colors.white),
@@ -247,299 +279,8 @@ class _NutritionScreenState extends State<NutritionScreen>
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  height: 40,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: categories.length,
-                    itemBuilder: (context, index) {
-                      final isSelected = _selectedCategory == categories[index];
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: ChoiceChip(
-                          label: Text(
-                            categories[index],
-                            style: TextStyle(
-                              color: isSelected
-                                  ? const Color(0xFF2C3E50)
-                                  : const Color(0xFF222222),
-                              fontSize: 15,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                              letterSpacing: 0.1,
-                            ),
-                          ),
-                          selected: isSelected,
-                          onSelected: (selected) {
-                            setState(() {
-                              _selectedCategory = categories[index];
-                            });
-                          },
-                          backgroundColor: isSelected
-                              ? nutritionColor
-                              : const Color(0xFFECECEC),
-                          selectedColor: nutritionColor,
-                          side: BorderSide(
-                            color: isSelected ? nutritionColor : Colors.black.withOpacity(0.08),
-                            width: 1.2,
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 9,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
               ],
             ),
-          ),
-          const SizedBox(height: 20),
-          // Açılır-Kapanır Analiz Sonuçları Paneli
-          _AnalysisResultsExpansionPanel(),
-          const SizedBox(height: 16),
-          // Bütçe optimizasyonu kartı
-          Consumer<UserProvider>(
-            builder: (context, userProvider, child) {
-              final budget = userProvider.budget;
-              final optimizationService = BudgetOptimizationService();
-              final optimizedProducts = budget > 0
-                  ? optimizationService.optimizeProductsForBudget(
-                      products: widget.products,
-                      budget: budget,
-                    )
-                  : <Product>[];
-              final budgetUsage = budget > 0
-                  ? optimizationService.calculateBudgetUsage(
-                      selectedProducts: optimizedProducts,
-                      budget: budget,
-                    )
-                  : 0.0;
-              final suggestions = budget > 0
-                  ? optimizationService.generateBudgetSuggestions(
-                      budget: budget,
-                      selectedProducts: optimizedProducts,
-                    )
-                  : <String>[];
-
-              return Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: nutritionColor.withValues(alpha: 0.3),
-                    width: 1,
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color:
-                                const Color(0xFF50FA7B).withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: const Color(0xFF50FA7B)
-                                  .withValues(alpha: 0.3),
-                              width: 1,
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.account_balance_wallet,
-                            color: Color(0xFF50FA7B),
-                            size: 24,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        const Text(
-                          'Bütçe Optimizasyonu',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    if (budget > 0) ...[
-                      // Bütçe bilgisi
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Aylık Bütçe:',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.8),
-                              fontSize: 14,
-                            ),
-                          ),
-                          Text(
-                            '₺${budget.toStringAsFixed(0)}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      // Bütçe kullanım oranı
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Kullanım:',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.8),
-                              fontSize: 14,
-                            ),
-                          ),
-                          Text(
-                            '${budgetUsage.toStringAsFixed(1)}%',
-                            style: TextStyle(
-                              color: budgetUsage > 100
-                                  ? Colors.red
-                                  : budgetUsage > 80
-                                      ? const Color(0xFFFFB86C)
-                                      : const Color(0xFF50FA7B),
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      // Öneriler
-                      if (suggestions.isNotEmpty) ...[
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.05),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: const Color(0xFF50FA7B)
-                                  .withValues(alpha: 0.3),
-                              width: 1,
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.lightbulb_outline,
-                                color: Color(0xFF50FA7B),
-                                size: 20,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  suggestions.first,
-                                  style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.9),
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                      ],
-                      // Optimize edilmiş ürün sayısı
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Önerilen Ürün:',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.8),
-                              fontSize: 14,
-                            ),
-                          ),
-                          Text(
-                            '${optimizedProducts.length} ürün',
-                            style: const TextStyle(
-                              color: Color(0xFF50FA7B),
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ] else ...[
-                      // Bütçe belirlenmemiş durumu
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.05),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.info_outline,
-                              color: Colors.white.withValues(alpha: 0.7),
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'Bütçe belirlenmedi. Ayarlar sayfasından bütçenizi belirleyerek besin önerilerinizi optimize edebilirsiniz.',
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.8),
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 16),
-                    // Bütçe ayarlama butonu
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const SettingsScreen()),
-                          );
-                        },
-                        icon: const Icon(Icons.settings),
-                        label: Text(
-                            budget > 0 ? 'Bütçeyi Düzenle' : 'Bütçe Belirle'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              const Color(0xFF50FA7B).withValues(alpha: 0.2),
-                          foregroundColor: const Color(0xFF50FA7B),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(
-                              color: const Color(0xFF50FA7B)
-                                  .withValues(alpha: 0.3),
-                              width: 1,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
           ),
           const SizedBox(height: 20),
           // Ürün listesi
@@ -547,9 +288,9 @@ class _NutritionScreenState extends State<NutritionScreen>
             child: ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: widget.products.length,
+              itemCount: _filteredProducts.length,
               itemBuilder: (context, index) {
-                final product = widget.products[index];
+                final product = _filteredProducts[index];
                 return AnimationConfiguration.staggeredList(
                   position: index,
                   duration: const Duration(milliseconds: 375),
@@ -572,69 +313,37 @@ class _NutritionScreenState extends State<NutritionScreen>
     return FutureBuilder<Map<String, dynamic>>(
       future: _getSelectedProfileMacros(),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
+        if (!snapshot.hasData) {
           return const Center(
-            child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-            ),
+            child: CircularProgressIndicator(),
           );
         }
 
-        if (snapshot.hasError) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.error_outline,
-                  color: Colors.white.withValues(alpha: 0.7),
-                  size: 48,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Bir hata oluştu: ${snapshot.error}',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.8),
-                    fontSize: 16,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          );
+        final profile = snapshot.data!;
+        final weight = _parseDouble(profile['weight'], 70.0);
+        final height = _parseDouble(profile['height'], 170.0);
+        final age = int.tryParse(profile['age']?.toString() ?? '') ?? 25;
+        final gender = (profile['gender'] as String?) ?? 'Erkek';
+        final activityLevel = (profile['activityLevel'] as String?) ?? 'Orta';
+
+        // Makro hesaplamaları
+        double bmr;
+        if (gender.toLowerCase() == 'erkek') {
+          bmr = (10 * weight) + (6.25 * height) - (5 * age) + 5;
+        } else {
+          bmr = (10 * weight) + (6.25 * height) - (5 * age) - 161;
         }
 
-        if (!snapshot.hasData ||
-            snapshot.data == null ||
-            snapshot.data!.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.info_outline,
-                  color: Colors.white.withValues(alpha: 0.7),
-                  size: 48,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Analizlerim ekranından bir profil oluşturup analiz yapmalısın.',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.8),
-                    fontSize: 16,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          );
-        }
+        final activityMultipliers = {
+          'Düşük': 1.2,
+          'Orta': 1.55,
+          'Yüksek': 1.725,
+        };
 
-        final macros = snapshot.data!;
-        final tdee = _parseDouble(macros['tdee'], 2000);
-        final protein = _parseDouble(macros['protein'], 120);
-        final carb = _parseDouble(macros['carb'], 250);
-        final fat = _parseDouble(macros['fat'], 45);
+        final tdee = bmr * (activityMultipliers[activityLevel] ?? 1.55);
+        final protein = weight * 2.0; // 2g/kg
+        final fat = tdee * 0.25 / 9; // %25 yağ
+        final carb = (tdee - (protein * 4) - (fat * 9)) / 4; // Kalan karbonhidrat
 
         return SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
@@ -642,7 +351,7 @@ class _NutritionScreenState extends State<NutritionScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Makro besin özeti kartı
+              // Makro özeti kartı
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -755,7 +464,7 @@ class _NutritionScreenState extends State<NutritionScreen>
                         ),
                         const SizedBox(width: 12),
                         const Text(
-                          'Günlük Hedef',
+                          'Günlük Hedefler',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 18,
@@ -765,15 +474,11 @@ class _NutritionScreenState extends State<NutritionScreen>
                       ],
                     ),
                     const SizedBox(height: 16),
-                    _buildProgressBar('Kalori', tdee, tdee, nutritionColor),
+                    _buildProgressBar('Protein', 45, protein, nutritionColor),
                     const SizedBox(height: 12),
-                    _buildProgressBar(
-                        'Protein', protein, protein, nutritionColor),
+                    _buildProgressBar('Karbonhidrat', 120, carb, nutritionColor),
                     const SizedBox(height: 12),
-                    _buildProgressBar(
-                        'Karbonhidrat', carb, carb, nutritionColor),
-                    const SizedBox(height: 12),
-                    _buildProgressBar('Yağ', fat, fat, nutritionColor),
+                    _buildProgressBar('Yağ', 35, fat, nutritionColor),
                   ],
                 ),
               ),
@@ -810,38 +515,79 @@ class _NutritionScreenState extends State<NutritionScreen>
   }
 
   Widget _buildFavoritesTab(Color nutritionColor, Color nutritionLight) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.favorite,
-            size: 64,
-            color: nutritionColor.withValues(alpha: 0.5),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Henüz favori besin eklenmemiş',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.7),
-              fontSize: 16,
+    if (_favorites.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.favorite,
+              size: 64,
+              color: nutritionColor.withValues(alpha: 0.5),
             ),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: () {
-              // Favori ekleme işlemi
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: nutritionColor,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+            const SizedBox(height: 16),
+            Text(
+              'Henüz favori besin eklenmemiş',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.7),
+                fontSize: 16,
               ),
             ),
-            icon: const Icon(Icons.add),
-            label: const Text('Favori Ekle'),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () {
+                _tabController.animateTo(0); // Go to recommendations tab
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: nutritionColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              icon: const Icon(Icons.add),
+              label: const Text('Favori Ekle'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Favori Besinleriniz (${_favorites.length})',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          AnimationLimiter(
+            child: ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _favorites.length,
+              itemBuilder: (context, index) {
+                final product = _favorites[index];
+                return AnimationConfiguration.staggeredList(
+                  position: index,
+                  duration: const Duration(milliseconds: 375),
+                  child: SlideAnimation(
+                    verticalOffset: 50.0,
+                    child: FadeInAnimation(
+                      child: _buildProductCard(product, nutritionColor),
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
         ],
       ),
@@ -849,6 +595,8 @@ class _NutritionScreenState extends State<NutritionScreen>
   }
 
   Widget _buildProductCard(Product product, Color color) {
+    final isFavorite = _favoriteIds.contains(product.id);
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -859,71 +607,141 @@ class _NutritionScreenState extends State<NutritionScreen>
           width: 1,
         ),
       ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: CachedNetworkImage(
-            imageUrl: product.imageUrl ?? '',
-            width: 50,
-            height: 50,
-            fit: BoxFit.cover,
-            placeholder: (context, url) => Container(
-              width: 50,
-              height: 50,
-              color: color.withValues(alpha: 0.1),
-              child: Center(
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(color),
-                ),
-              ),
-            ),
-            errorWidget: (context, url, error) => Container(
-              width: 50,
-              height: 50,
-              color: color.withValues(alpha: 0.1),
-              child: Icon(Icons.image_not_supported,
-                  color: color.withValues(alpha: 0.5)),
-            ),
-          ),
-        ),
-        title: Text(
-          product.name,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        subtitle: Text(
-          '${product.market} • ${product.price.toStringAsFixed(2)} TL',
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.7),
-          ),
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            IconButton(
-              icon: const Icon(Icons.favorite_border, color: Colors.white70),
-              onPressed: () {
-                // Favori ekleme işlemi
-              },
-            ),
-            ElevatedButton(
-              onPressed: () {
-                // Sepete ekleme işlemi
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: color,
-                foregroundColor: Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(
+            // Product image and basic info row
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Product image
+                ClipRRect(
                   borderRadius: BorderRadius.circular(12),
+                  child: CachedNetworkImage(
+                    imageUrl: product.imageUrl ?? '',
+                    width: 80,
+                    height: 80,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Container(
+                      width: 80,
+                      height: 80,
+                      color: color.withValues(alpha: 0.1),
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(color),
+                        ),
+                      ),
+                    ),
+                    errorWidget: (context, url, error) => Container(
+                      width: 80,
+                      height: 80,
+                      color: color.withValues(alpha: 0.1),
+                      child: Icon(Icons.image_not_supported,
+                          color: color.withValues(alpha: 0.5)),
+                    ),
+                  ),
                 ),
-              ),
-              child: const Text('Listeme Ekle'),
+                const SizedBox(width: 16),
+                // Product details
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Product name - made larger
+                      Text(
+                        product.name,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18, // Increased font size
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
+                      // Market and price
+                      Text(
+                        '${product.market} • ${product.price.toStringAsFixed(2)} TL',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.7),
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      // Nutrition info if available
+                      if (product.caloriesPer100g != null)
+                        Text(
+                          '${product.caloriesPer100g!.toStringAsFixed(0)} kcal/100g',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.6),
+                            fontSize: 12,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // Action buttons row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Heart button (favorite)
+                GestureDetector(
+                  onTap: () => _toggleFavorite(product),
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: isFavorite 
+                          ? Colors.red.withValues(alpha: 0.2)
+                          : Colors.white.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: isFavorite 
+                            ? Colors.red.withValues(alpha: 0.5)
+                            : Colors.white.withValues(alpha: 0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Icon(
+                      isFavorite ? Icons.favorite : Icons.favorite_border,
+                      color: isFavorite ? Colors.red : Colors.white70,
+                      size: 20,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Add to list button - made longer to fill space
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      // Sepete ekleme işlemi
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('${product.name} listeye eklendi'),
+                          backgroundColor: color,
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: color,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text(
+                      'Listeme Ekle',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -1048,121 +866,59 @@ class _AnalysisResultsExpansionPanelState extends State<_AnalysisResultsExpansio
     return FutureBuilder<Map<String, dynamic>>(
       future: _getSelectedProfile(),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+        if (!snapshot.hasData) {
+          return const SizedBox.shrink();
         }
-        final profile = snapshot.data;
-        double bmi = 0;
-        double bmr = 0;
-        if (profile != null && profile.isNotEmpty) {
-          bmi = double.tryParse(profile['bmi']?.toString() ?? '') ??
-                _calculateBMI(profile['weight'], profile['height']);
-          bmr = double.tryParse(profile['bmr']?.toString() ?? '') ??
-                _calculateBMR(profile['weight'], profile['height'], profile['age'], profile['gender']);
-        }
-        return Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.13),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: const Color(0xFFFFB86C).withValues(alpha: 0.3),
-              width: 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFFFB86C).withValues(alpha: 0.08),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
+
+        final profile = snapshot.data!;
+        final weight = double.tryParse(profile['weight']?.toString() ?? '0') ?? 0;
+        final height = double.tryParse(profile['height']?.toString() ?? '0') ?? 0;
+        final age = int.tryParse(profile['age']?.toString() ?? '0') ?? 0;
+        final gender = profile['gender']?.toString() ?? '';
+
+        final bmi = _calculateBMI(weight, height);
+        final bmr = _calculateBMR(weight, height, age, gender);
+
+        return ExpansionTile(
+          title: const Text(
+            'Vücut Analizi Sonuçları',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
-          child: ExpansionTile(
-            initiallyExpanded: false,
-            tilePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            title: Row(
-              children: [
-                Icon(Icons.analytics_outlined, color: const Color(0xFFFFB86C), size: 26),
-                const SizedBox(width: 10),
-                Text('Analiz Sonuçların', style: TextStyle(color: const Color(0xFFFFB86C), fontSize: 17, fontWeight: FontWeight.bold)),
-              ],
-            ),
-            children: [
-              if (profile == null || profile.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    children: [
-                      Icon(Icons.info_outline, color: const Color(0xFFFFB86C), size: 24),
-                      const SizedBox(width: 10),
-                      const Expanded(
-                        child: Text(
-                          'Analizlerim ekranından bir profil oluşturup analiz yapmalısın. Sonuçlar burada görünecek.',
-                          style: TextStyle(color: Colors.white, fontSize: 15),
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              else ...[
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Wrap(
-                    spacing: 18,
-                    runSpacing: 10,
-                    children: [
-                      _buildAnalysisInfo('İsim', profile['name'] ?? '-'),
-                      _buildAnalysisInfo('Yaş', profile['age']?.toString() ?? '-'),
-                      _buildAnalysisInfo('Cinsiyet', profile['gender'] ?? '-'),
-                      _buildAnalysisInfo('Boy', profile['height']?.toString() ?? '-'),
-                      _buildAnalysisInfo('Kilo', profile['weight']?.toString() ?? '-'),
-                      _buildAnalysisInfo('Hedef', profile['purpose'] ?? '-'),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Row(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _buildAnalysisResult('BMI', bmi > 0 ? bmi.toStringAsFixed(1) : '-'),
-                      _buildAnalysisResult('BMR', bmr > 0 ? bmr.toStringAsFixed(0) : '-'),
-                      _buildAnalysisResult('TDEE', profile['tdee'] ?? ''),
+                      _buildAnalysisResult('BMI', bmi.toStringAsFixed(1)),
+                      _buildAnalysisResult('BMR', bmr.toStringAsFixed(0)),
                     ],
                   ),
-                ),
-                if (profile['tdee'] != null && profile['tdee'].toString().isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 20, bottom: 12),
-                    child: Text('Günlük kalori ihtiyacın: ${profile['tdee'].toString().split('.')[0]} kcal',
-                        style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 15, fontWeight: FontWeight.w500)),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildAnalysisResult('Kilo', '${weight.toStringAsFixed(1)} kg'),
+                      _buildAnalysisResult('Boy', '${height.toStringAsFixed(0)} cm'),
+                    ],
                   ),
-              ],
-            ],
-          ),
+                ],
+              ),
+            ),
+          ],
         );
       },
     );
   }
 
-  Widget _buildAnalysisInfo(String label, String value) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFB86C).withValues(alpha: 0.09),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text('$label: $value', style: const TextStyle(color: Colors.white, fontSize: 14)),
-    );
-  }
-
-  Widget _buildAnalysisResult(String label, dynamic value) {
+  Widget _buildAnalysisResult(String label, String value) {
     return Column(
       children: [
         Text(label, style: const TextStyle(color: Color(0xFFFFB86C), fontSize: 15, fontWeight: FontWeight.bold)),
         const SizedBox(height: 6),
-        Text(value != null && value.toString().isNotEmpty ? value.toString().split('.')[0] : '-',
-            style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+        Text(value, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
       ],
     );
   }

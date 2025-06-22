@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import '../../presentation/presentation.dart';
+import '../../data/data.dart';
+import 'settings_screen.dart';
 
 /// Analiz ekranı: Kullanıcı profilleri, vücut ölçüleri, aktivite seviyesi, amaç ve sonuçlar.
 class AnalyticsScreen extends StatefulWidget {
@@ -567,6 +569,16 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       
       _isLoadingForm = false;
     });
+  }
+
+  double _parseDouble(dynamic value, double defaultValue) {
+    if (value == null) return defaultValue;
+    if (value is num) return value.toDouble();
+    if (value is String) {
+      final parsed = double.tryParse(value);
+      return parsed ?? defaultValue;
+    }
+    return defaultValue;
   }
 
   @override
@@ -1242,6 +1254,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                 ],
                               ),
                             ),
+                            const SizedBox(height: 20),
+                            // Bütçe optimizasyonu kartı
+                            _buildBudgetOptimizationCard(),
                           ],
                         ),
                       ),
@@ -1383,5 +1398,262 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildBudgetOptimizationCard() {
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _getSelectedProfile(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const SizedBox.shrink();
+        }
+
+        final profile = snapshot.data!;
+        final budget = _parseDouble(profile['budget'], 0.0);
+        final suggestions = <String>[];
+        final optimizedProducts = <Product>[];
+
+        if (budget > 0) {
+          // Bütçe önerileri
+          if (budget < 1000) {
+            suggestions.add('Düşük bütçe için mevsimlik sebzeleri tercih edin.');
+          } else if (budget < 2000) {
+            suggestions.add('Protein kaynaklarını haftalık planlayarak alışveriş yapın.');
+          } else {
+            suggestions.add('Çeşitli besin gruplarından dengeli alışveriş yapabilirsiniz.');
+          }
+
+          // Optimize edilmiş ürünler (örnek)
+          optimizedProducts.addAll(OptimizationService.getProducts().take(5));
+        }
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: const Color(0xFF50FA7B).withValues(alpha: 0.3),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF50FA7B)
+                          .withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: const Color(0xFF50FA7B)
+                            .withValues(alpha: 0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.account_balance_wallet,
+                      color: Color(0xFF50FA7B),
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Bütçe Optimizasyonu',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              if (budget > 0) ...[
+                // Bütçe bilgisi
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Aylık Bütçe:',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.8),
+                        fontSize: 14,
+                      ),
+                    ),
+                    Text(
+                      '₺${budget.toStringAsFixed(0)}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                // Bütçe kullanım oranı
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Kullanım Oranı:',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.8),
+                        fontSize: 14,
+                      ),
+                    ),
+                    Text(
+                      '${((optimizedProducts.fold(0.0, (sum, p) => sum + p.price) / budget) * 100).toStringAsFixed(1)}%',
+                      style: const TextStyle(
+                        color: Color(0xFF50FA7B),
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                // Öneriler
+                if (suggestions.isNotEmpty) ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: const Color(0xFF50FA7B)
+                            .withValues(alpha: 0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.lightbulb_outline,
+                          color: Color(0xFF50FA7B),
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            suggestions.first,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.9),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                // Optimize edilmiş ürün sayısı
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Önerilen Ürün:',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.8),
+                        fontSize: 14,
+                      ),
+                    ),
+                    Text(
+                      '${optimizedProducts.length} ürün',
+                      style: const TextStyle(
+                        color: Color(0xFF50FA7B),
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ] else ...[
+                // Bütçe belirlenmemiş durumu
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: Colors.white.withValues(alpha: 0.7),
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Bütçe belirlenmedi. Ayarlar sayfasından bütçenizi belirleyerek besin önerilerinizi optimize edebilirsiniz.',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.8),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 16),
+              // Bütçe ayarlama butonu
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                    );
+                  },
+                  icon: const Icon(Icons.settings),
+                  label: Text(
+                      budget > 0 ? 'Bütçeyi Düzenle' : 'Bütçe Belirle'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor:
+                        const Color(0xFF50FA7B).withValues(alpha: 0.2),
+                    foregroundColor: const Color(0xFF50FA7B),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(
+                        color: const Color(0xFF50FA7B)
+                            .withValues(alpha: 0.3),
+                        width: 1,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<Map<String, dynamic>> _getSelectedProfile() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? profilesString = prefs.getString('profiles');
+    final int? selectedIndex = prefs.getInt('selectedProfileIndex');
+    if (profilesString != null && selectedIndex != null) {
+      final List<dynamic> decoded = json.decode(profilesString);
+      if (selectedIndex >= 0 && selectedIndex < decoded.length) {
+        final Map<String, dynamic> profile = Map<String, dynamic>.from(decoded[selectedIndex]);
+        return profile;
+      }
+    }
+    return {};
   }
 }

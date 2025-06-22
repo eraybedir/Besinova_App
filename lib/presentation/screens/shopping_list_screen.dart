@@ -28,7 +28,8 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
   @override
   void initState() {
     super.initState();
-    categories = ProductDataService.getCategories();
+    // Use the actual categories from the product data
+    categories = ['Tümü', 'Meyve & Sebze', 'Süt & Kahvaltı', 'Et & Tavuk', 'Bakliyat', 'Temel Gıda'];
     // _runOptimization(); // Removed automatic optimization at startup
   }
 
@@ -231,40 +232,6 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        // Kategori filtreleri
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            children: categories.map((category) {
-                              final isSelected = _selectedCategory == category;
-                              return Container(
-                                margin: const EdgeInsets.only(right: 8),
-                                child: FilterChip(
-                                  label: Text(
-                                    category,
-                                    style: TextStyle(
-                                      color: isSelected ? Colors.white : shoppingColor,
-                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                    ),
-                                  ),
-                                  selected: isSelected,
-                                  onSelected: (selected) {
-                                    setState(() {
-                                      _selectedCategory = category;
-                                    });
-                                  },
-                                  backgroundColor: Colors.transparent,
-                                  selectedColor: shoppingColor,
-                                  checkmarkColor: Colors.white,
-                                  side: BorderSide(
-                                    color: isSelected ? shoppingColor : shoppingColor.withValues(alpha: 0.5),
-                                    width: 1,
-                                  ),
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ),
                       ],
                     ),
                   ),
@@ -519,15 +486,6 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Checkbox(
-                    value: item.isChecked,
-                    onChanged: (value) {
-                      provider.toggleItemChecked(item.id);
-                    },
-                    activeColor: shoppingColor,
-                    checkColor: Colors.white,
                   ),
                 ],
               ),

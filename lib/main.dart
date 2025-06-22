@@ -16,6 +16,7 @@ import 'presentation/screens/signin_screen.dart';
 import 'presentation/screens/signup_screen.dart';
 import 'presentation/screens/optimization_test_screen.dart';
 import 'data/services/optimization_service.dart';
+import 'data/services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -65,6 +66,7 @@ class _BesinovaAppContent extends StatelessWidget {
       themeMode: themeProvider.themeMode,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
+      scaffoldMessengerKey: NotificationService.messengerKey,
       home: const SplashScreen(),
       routes: {
         '/home': (context) => const HomeScreen(),

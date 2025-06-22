@@ -18,6 +18,12 @@ import '../../core/core.dart';
 import '../../data/data.dart';
 import '../../data/services/csv_data_loader.dart';
 import '../../core/services/localization_service.dart';
+import '../../data/models/product.dart';
+import '../../data/services/product_data_service.dart';
+import '../providers/user_provider.dart';
+import '../providers/optimization_provider.dart';
+import '../../data/services/notification_service.dart';
+import 'notification_screen.dart';
 
 /// Ana ekran widget'ı. Kullanıcıya selam verir ve ana fonksiyonlara erişim sağlar.
 class HomeScreen extends StatefulWidget {
@@ -187,52 +193,18 @@ class _HomeScreenState extends State<HomeScreen> {
                       builder: (context, userProvider, child) {
                         return IconButton(
                           onPressed: () {
-                            // Bildirimler sayfasına git (gelecekte eklenebilir)
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Bildirimler yakında eklenecek!'),
-                                duration: Duration(seconds: 2),
-                                behavior: SnackBarBehavior.floating,
+                            // Navigate to notification page
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const NotificationScreen(),
                               ),
                             );
                           },
-                          icon: Stack(
-                            children: [
-                              const Icon(
-                                Icons.notifications_outlined,
-                                color: Colors.white,
-                                size: 28,
-                              ),
-                              // Bildirim sayısı badge'i (sadece bildirim varsa göster)
-                              if (userProvider.notificationCount > 0)
-                                Positioned(
-                                  right: 0,
-                                  top: 0,
-                                  child: Container(
-                                    padding: const EdgeInsets.all(2),
-                                    decoration: BoxDecoration(
-                                      color: Colors.red,
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    constraints: const BoxConstraints(
-                                      minWidth: 16,
-                                      minHeight: 16,
-                                    ),
-                                    child: Text(
-                                      userProvider.notificationCount > 99
-                                          ? '99+'
-                                          : userProvider.notificationCount
-                                              .toString(),
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ),
-                                ),
-                            ],
+                          icon: const Icon(
+                            Icons.notifications_outlined,
+                            color: Colors.white,
+                            size: 28,
                           ),
                         );
                       },
