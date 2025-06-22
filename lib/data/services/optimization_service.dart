@@ -193,6 +193,9 @@ class OptimizationService {
       
       for (var item in items) {
         print('DEBUG: Processing item: ${item['name']} with image_url: ${item['image_url']}');
+        print('DEBUG: Item price_per_unit: ${item['price_per_unit']} (type: ${item['price_per_unit'].runtimeType})');
+        print('DEBUG: Item total_price: ${item['total_price']} (type: ${item['total_price'].runtimeType})');
+        print('DEBUG: Item raw data: $item');
         
         final shoppingItem = ShoppingItem(
           id: '${item['name']}_${item['market']}_${item['quantity']}', // Generate unique ID
@@ -200,11 +203,11 @@ class OptimizationService {
           productName: item['name'] ?? '',
           market: item['market'] ?? '',
           quantity: item['quantity'] ?? 1,
-          pricePerUnit: (item['price'] is num) ? (item['price'] as num).toDouble() : 0.0,
-          totalPrice: (item['price'] is num) ? (item['price'] as num).toDouble() : 0.0,
-          price: (item['price'] is num) ? (item['price'] as num).toDouble() : 0.0,
-          weightPerUnit: (item['weight_g'] is num) ? (item['weight_g'] as num).toInt() : 1000,
-          totalWeight: (item['weight_g'] is num) ? (item['weight_g'] as num).toInt() : 1000,
+          pricePerUnit: (item['price_per_unit'] is num) ? (item['price_per_unit'] as num).toDouble() : 0.0,
+          totalPrice: (item['total_price'] is num) ? (item['total_price'] as num).toDouble() : 0.0,
+          price: (item['price_per_unit'] is num) ? (item['price_per_unit'] as num).toDouble() : 0.0,
+          weightPerUnit: (item['weight_per_unit'] is num) ? (item['weight_per_unit'] as num).toInt() : 1000,
+          totalWeight: (item['total_weight'] is num) ? (item['total_weight'] as num).toInt() : 1000,
           calories: (item['calories'] is num) ? (item['calories'] as num).toDouble() : 0.0,
           protein: (item['protein'] is num) ? (item['protein'] as num).toDouble() : 0.0,
           carbs: (item['carbs'] is num) ? (item['carbs'] as num).toDouble() : 0.0,
@@ -219,7 +222,7 @@ class OptimizationService {
           id: item['id'] ?? 0,
           name: item['name'] ?? '',
           market: item['market'] ?? '',
-          price: (item['price'] is num) ? (item['price'] as num).toDouble() : 0.0,
+          price: (item['price_per_unit'] is num) ? (item['price_per_unit'] as num).toDouble() : 0.0,
           imageUrl: item['image_url'] ?? '', // Add image URL from server
           category: item['category'] ?? '',
           caloriesPer100g: (item['calories'] is num) ? (item['calories'] as num).toDouble() : null,
@@ -229,6 +232,8 @@ class OptimizationService {
           createdAt: DateTime.now(),
         );
         
+        print('DEBUG: Created shopping item with price: ${shoppingItem.price}');
+        print('DEBUG: Created product with price: ${product.price}');
         print('DEBUG: Created shopping item with imageUrl: ${shoppingItem.imageUrl}');
         print('DEBUG: Created product with imageUrl: ${product.imageUrl}');
         
