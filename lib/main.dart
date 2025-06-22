@@ -21,7 +21,7 @@ import 'data/services/notification_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize optimization service
+  // Initialize optimization service with gender mapping fix
   print("Initializing optimization service...");
   bool optimizationInitialized = await OptimizationService.initialize();
   if (optimizationInitialized) {

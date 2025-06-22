@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import '../../presentation/presentation.dart';
 import '../../data/data.dart';
+import '../../core/constants/app_constants.dart';
 import 'settings_screen.dart';
 
 /// Analiz ekranı: Kullanıcı profilleri, vücut ölçüleri, aktivite seviyesi, amaç ve sonuçlar.
@@ -51,7 +52,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   final List<String> _purposeOptions = [
     'Kilo vermek için',
     'Kilo almak için',
-    'Sadece alışveriş önerisi için',
+    'Sağlıklı olmak için',
     'Sporcu için besin önerisi',
   ];
 
@@ -123,6 +124,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     if (index >= 0 && index < _profiles.length) {
       final userProvider = Provider.of<UserProvider>(context, listen: false);
       final p = _profiles[index];
+      
+      print('DEBUG: _syncUserProviderWithProfile - profile age: ${p['age']}');
+      print('DEBUG: _syncUserProviderWithProfile - profile age type: ${p['age'].runtimeType}');
+      
+      final parsedAge = p['age'] != null && p['age'].toString().isNotEmpty
+          ? int.tryParse(p['age'].toString())
+          : userProvider.age;
+      
+      print('DEBUG: _syncUserProviderWithProfile - parsed age: $parsedAge');
+      
+      // Update UserProvider
       userProvider.updateUserField(
         name: p['name'] ?? '',
         height: p['height'] != null && p['height'].toString().isNotEmpty
@@ -131,13 +143,58 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         weight: p['weight'] != null && p['weight'].toString().isNotEmpty
             ? double.tryParse(p['weight'].toString())
             : userProvider.weight,
-        age: p['age'] != null && p['age'].toString().isNotEmpty
-            ? int.tryParse(p['age'].toString())
-            : userProvider.age,
+        age: parsedAge,
         gender: p['gender'] ?? userProvider.gender,
         activityLevel: p['activityLevel'] ?? userProvider.activityLevel,
         goal: p['purpose'] ?? userProvider.goal,
       );
+      
+      print('DEBUG: _syncUserProviderWithProfile - after update, user age: ${userProvider.age}');
+      
+      // Save to SharedPreferences to persist the data
+      _saveUserDataToStorage(
+        name: p['name'] ?? '',
+        height: p['height'] != null && p['height'].toString().isNotEmpty
+            ? double.tryParse(p['height'].toString()) ?? userProvider.height
+            : userProvider.height,
+        weight: p['weight'] != null && p['weight'].toString().isNotEmpty
+            ? double.tryParse(p['weight'].toString()) ?? userProvider.weight
+            : userProvider.weight,
+        age: parsedAge ?? userProvider.age,
+        gender: p['gender'] ?? userProvider.gender,
+        activityLevel: p['activityLevel'] ?? userProvider.activityLevel,
+        goal: p['purpose'] ?? userProvider.goal,
+      );
+    }
+  }
+
+  /// Save user data to SharedPreferences
+  Future<void> _saveUserDataToStorage({
+    required String name,
+    required double height,
+    required double weight,
+    required int age,
+    required String gender,
+    required String activityLevel,
+    required String goal,
+  }) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      print('DEBUG: _saveUserDataToStorage - saving age: $age');
+      print('DEBUG: _saveUserDataToStorage - saving gender: $gender');
+      
+      await prefs.setString(AppConstants.storageKeyName, name);
+      await prefs.setDouble(AppConstants.storageKeyHeight, height);
+      await prefs.setDouble(AppConstants.storageKeyWeight, weight);
+      await prefs.setInt(AppConstants.storageKeyAge, age);
+      await prefs.setString(AppConstants.storageKeyGender, gender);
+      await prefs.setString(AppConstants.storageKeyActivityLevel, activityLevel);
+      await prefs.setString(AppConstants.storageKeyGoal, goal);
+      
+      print('DEBUG: _saveUserDataToStorage - data saved successfully');
+    } catch (e) {
+      print('ERROR: _saveUserDataToStorage - failed to save data: $e');
     }
   }
 
@@ -369,8 +426,19 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           _profiles[_selectedIndex]['fat'] = macros['fat']!.round();
           _saveProfiles();
 
-          // UserProvider'ı güncelle
+          // UserProvider'ı güncelle ve SharedPreferences'a kaydet
           _syncUserProviderWithProfile(_selectedIndex);
+          
+          // Also save directly to ensure data persistence
+          _saveUserDataToStorage(
+            name: _profiles[_selectedIndex]['name'] ?? '',
+            height: height,
+            weight: weight,
+            age: age,
+            gender: _gender,
+            activityLevel: _activityLevel,
+            goal: _purpose,
+          );
         }
 
         // Kullanıcıya öneri üret
@@ -472,8 +540,19 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           _profiles[_selectedIndex]['fat'] = 45;
           _saveProfiles();
 
-          // UserProvider'ı güncelle
+          // UserProvider'ı güncelle ve SharedPreferences'a kaydet
           _syncUserProviderWithProfile(_selectedIndex);
+          
+          // Also save directly to ensure data persistence
+          _saveUserDataToStorage(
+            name: _profiles[_selectedIndex]['name'] ?? '',
+            height: height,
+            weight: weight,
+            age: age.toInt(),
+            gender: _gender,
+            activityLevel: _activityLevel,
+            goal: _purpose,
+          );
         }
 
         // Kullanıcıya öneri üret

@@ -65,6 +65,7 @@ class UserProvider extends ChangeNotifier {
       _isLoading = false;
       
       print('DEBUG: UserProvider.loadUserData() - loaded user: ${_user?.name}, budget: ${_user?.budget}, avatar: ${_user?.avatar}');
+      print('DEBUG: UserProvider.loadUserData() - user age: ${_user?.age}');
       print('DEBUG: UserProvider.loadUserData() - hasSetBudget: $_hasSetBudget');
       
     } catch (e) {

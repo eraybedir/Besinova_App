@@ -51,7 +51,12 @@ class StorageService {
   /// Load user data from local storage
   static Future<User> loadUser() async {
     final loadedBudget = prefs.getDouble(AppConstants.storageKeyBudget) ?? AppConstants.defaultBudget;
+    final loadedAge = prefs.getInt(AppConstants.storageKeyAge) ?? AppConstants.defaultAge;
+    final loadedGender = prefs.getString(AppConstants.storageKeyGender) ?? AppConstants.defaultGender;
+    
     print('DEBUG: StorageService.loadUser() - budget loaded from SharedPreferences: $loadedBudget');
+    print('DEBUG: StorageService.loadUser() - age loaded from SharedPreferences: $loadedAge');
+    print('DEBUG: StorageService.loadUser() - gender loaded from SharedPreferences: $loadedGender');
     
     final user = User(
         name: prefs.getString(AppConstants.storageKeyName) ??
@@ -62,10 +67,8 @@ class StorageService {
             AppConstants.defaultHeight,
         weight: prefs.getDouble(AppConstants.storageKeyWeight) ??
             AppConstants.defaultWeight,
-        age:
-            prefs.getInt(AppConstants.storageKeyAge) ?? AppConstants.defaultAge,
-        gender: prefs.getString(AppConstants.storageKeyGender) ??
-            AppConstants.defaultGender,
+        age: loadedAge,
+        gender: loadedGender,
         activityLevel: prefs.getString(AppConstants.storageKeyActivityLevel) ??
             AppConstants.defaultActivityLevel,
         goal: prefs.getString(AppConstants.storageKeyGoal) ??
@@ -84,7 +87,7 @@ class StorageService {
                 AppConstants.defaultNotificationCount,
       );
     
-    print('DEBUG: StorageService.loadUser() - created user with budget: ${user.budget}');
+    print('DEBUG: StorageService.loadUser() - created user with budget: ${user.budget}, age: ${user.age}, gender: ${user.gender}');
     return user;
   }
 
