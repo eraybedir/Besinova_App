@@ -56,6 +56,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   // Akordiyon yapısı için state değişkeni
   bool _showResults = false;
   bool _isCalculating = false;
+  bool _isLoadingForm = false; // Form yüklenirken flag
 
   // Sonuçlar kartı için key
   final GlobalKey _resultsKey = GlobalKey();
@@ -64,6 +65,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   void initState() {
     super.initState();
     _loadProfiles();
+    _loadUserDataFromProvider();
 
     // Input alanlarına listener ekle
     _heightController.addListener(_onInputChanged);
@@ -81,9 +83,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     super.dispose();
   }
 
-  /// Input alanları değiştiğinde sonuçları kapat
+  /// Input alanları değiştiğinde sonuçları kapat (sadece manuel değişikliklerde)
   void _onInputChanged() {
-    if (_showResults) {
+    if (_showResults && !_isLoadingForm) {
       setState(() {
         _showResults = false;
       });
@@ -140,6 +142,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   /// Yeni profil ekler.
   void _addProfile(String name) {
     setState(() {
+      _isLoadingForm = true;
       _profiles.add({
         'name': name,
         'height': '',
@@ -158,6 +161,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       _tdee = null;
       _recommendation = '';
       _showResults = false; // Yeni profil eklendiğinde sonuçları kapat
+      _isLoadingForm = false;
     });
     _saveProfiles();
     _saveSelectedProfileIndex(_selectedIndex);
@@ -167,6 +171,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   /// Seçili profili yükler ve ekrana yazar.
   void _selectProfile(int index) {
     setState(() {
+      _isLoadingForm = true;
       _selectedIndex = index;
       _heightController.text = _profiles[index]['height'];
       _weightController.text = _profiles[index]['weight'];
@@ -179,9 +184,26 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       _tdee = null;
       _recommendation = '';
       _showResults = false; // Profil değiştiğinde sonuçları kapat
+      _isLoadingForm = false;
     });
     _saveSelectedProfileIndex(index);
     _syncUserProviderWithProfile(index);
+    
+    // Eğer profil verileri varsa, makroları yeniden hesapla
+    if (_profiles[index]['tdee'] != null) {
+      double tdee = _profiles[index]['tdee'].toDouble();
+      double weight = double.tryParse(_profiles[index]['weight']) ?? 70;
+      String purpose = _profiles[index]['purpose'] ?? _purposeOptions[0];
+      
+      Map<String, double> macros = _calculateMacros(tdee, purpose, weight);
+      
+      setState(() {
+        _profiles[index]['protein'] = macros['protein']!.round();
+        _profiles[index]['carb'] = macros['carb']!.round();
+        _profiles[index]['fat'] = macros['fat']!.round();
+        _saveProfiles();
+      });
+    }
   }
 
   /// Profil silme işlemi (onaylı)
@@ -202,6 +224,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             TextButton(
               onPressed: () {
                 setState(() {
+                  _isLoadingForm = true;
                   _profiles.removeAt(_selectedIndex);
                   if (_profiles.isEmpty) {
                     _selectedIndex = -1;
@@ -216,6 +239,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   _tdee = null;
                   _recommendation = '';
                   _showResults = false; // Profil silindiğinde sonuçları kapat
+                  _isLoadingForm = false;
                 });
                 _saveProfiles();
                 _saveSelectedProfileIndex(_selectedIndex);
@@ -247,6 +271,149 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   Future<void> _saveSelectedProfileIndex(int index) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('selectedProfileIndex', index);
+  }
+
+  /// Kullanıcının hedefine göre makro besin değerlerini hesaplar
+  Map<String, double> _calculateMacros(double tdee, String purpose, double weight) {
+    double protein, carbs, fat;
+    
+    switch (purpose) {
+      case 'Kilo vermek için':
+        // Kilo verme için: Yüksek protein, orta yağ, düşük karbonhidrat
+        protein = weight * 2.2; // kg başına 2.2g protein
+        fat = tdee * 0.25 / 9; // Kalorinin %25'i yağdan (1g yağ = 9 kcal)
+        carbs = (tdee - (protein * 4) - (fat * 9)) / 4; // Kalan kaloriler karbonhidrattan (1g karbonhidrat = 4 kcal)
+        break;
+        
+      case 'Kilo almak için':
+        // Kilo alma için: Yüksek karbonhidrat, orta protein, düşük yağ
+        protein = weight * 1.8; // kg başına 1.8g protein
+        fat = tdee * 0.20 / 9; // Kalorinin %20'si yağdan
+        carbs = (tdee - (protein * 4) - (fat * 9)) / 4; // Kalan kaloriler karbonhidrattan
+        break;
+        
+      case 'Kas yapmak için':
+        // Kas yapma için: Yüksek protein, orta karbonhidrat, düşük yağ
+        protein = weight * 2.5; // kg başına 2.5g protein
+        fat = tdee * 0.20 / 9; // Kalorinin %20'si yağdan
+        carbs = (tdee - (protein * 4) - (fat * 9)) / 4; // Kalan kaloriler karbonhidrattan
+        break;
+        
+      default: // 'Kilonu korumak için' veya diğer durumlar
+        // Kilo koruma için: Dengeli makro dağılımı
+        protein = weight * 2.0; // kg başına 2.0g protein
+        fat = tdee * 0.25 / 9; // Kalorinin %25'i yağdan
+        carbs = (tdee - (protein * 4) - (fat * 9)) / 4; // Kalan kaloriler karbonhidrattan
+        break;
+    }
+    
+    // Minimum değerleri kontrol et
+    protein = protein.clamp(weight * 1.0, weight * 3.0); // Minimum 1g/kg, maksimum 3g/kg
+    fat = fat.clamp(weight * 0.8, weight * 2.0); // Minimum 0.8g/kg, maksimum 2g/kg
+    carbs = carbs.clamp(50, tdee * 0.6 / 4); // Minimum 50g, maksimum kalorinin %60'ı
+    
+    return {
+      'protein': protein,
+      'carb': carbs,
+      'fat': fat,
+    };
+  }
+
+  /// BMI, BMR ve TDEE hesaplar ve öneri üretir.
+  void _calculateResults() {
+    final double? height = double.tryParse(_heightController.text);
+    final double? weight = double.tryParse(_weightController.text);
+    final int? age = int.tryParse(_ageController.text);
+
+    if (height != null && weight != null && age != null && height > 0 && weight > 0 && age > 0) {
+      setState(() {
+        _isCalculating = true;
+      });
+
+      // BMI hesaplama
+      double bmi = weight / ((height / 100) * (height / 100));
+
+      // BMR hesaplama (Mifflin-St Jeor formülü)
+      double bmr;
+      if (_gender == 'Erkek') {
+        bmr = (10 * weight) + (6.25 * height) - (5 * age) + 5;
+      } else {
+        bmr = (10 * weight) + (6.25 * height) - (5 * age) - 161;
+      }
+
+      // TDEE hesaplama (aktivite çarpanı)
+      double tdee = bmr * _activityMultipliers[_activityLevel]!;
+
+      // Makro besin değerlerini hesapla
+      Map<String, double> macros = _calculateMacros(tdee, _purpose, weight);
+
+      setState(() {
+        _bmi = bmi;
+        _bmr = bmr;
+        _tdee = tdee;
+        _isCalculating = false;
+        _showResults = true; // Sonuçları göster
+
+        if (_selectedIndex >= 0) {
+          _profiles[_selectedIndex]['height'] = _heightController.text;
+          _profiles[_selectedIndex]['weight'] = _weightController.text;
+          _profiles[_selectedIndex]['age'] = _ageController.text;
+          _profiles[_selectedIndex]['gender'] = _gender;
+          _profiles[_selectedIndex]['activityLevel'] = _activityLevel;
+          _profiles[_selectedIndex]['purpose'] = _purpose;
+          _profiles[_selectedIndex]['tdee'] = tdee;
+          _profiles[_selectedIndex]['protein'] = macros['protein']!.round();
+          _profiles[_selectedIndex]['carb'] = macros['carb']!.round();
+          _profiles[_selectedIndex]['fat'] = macros['fat']!.round();
+          _saveProfiles();
+
+          // UserProvider'ı güncelle
+          _syncUserProviderWithProfile(_selectedIndex);
+        }
+
+        // Kullanıcıya öneri üret
+        if (bmi < 18.5) {
+          _recommendation =
+              'Kilo alman faydalı olabilir. Günlük kalori ihtiyacın: ${tdee.toStringAsFixed(0)} kcal';
+        } else if (bmi >= 18.5 && bmi <= 24.9) {
+          _recommendation =
+              'Kilonu koruyorsun, böyle devam! Günlük kalori ihtiyacın: ${tdee.toStringAsFixed(0)} kcal';
+        } else if (bmi >= 25 && bmi <= 29.9) {
+          _recommendation =
+              'Biraz kilo vermen önerilir. Günlük kalori ihtiyacın: ${tdee.toStringAsFixed(0)} kcal';
+        } else {
+          _recommendation =
+              'Sağlığın için kilo vermen önemli. Günlük kalori ihtiyacın: ${tdee.toStringAsFixed(0)} kcal';
+        }
+      });
+
+      // Sonuçlar gösterildikten sonra otomatik scroll yap
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients &&
+            _resultsKey.currentContext != null) {
+          // Sonuçlar kartının pozisyonunu bul
+          final RenderBox renderBox =
+              _resultsKey.currentContext!.findRenderObject() as RenderBox;
+          final position = renderBox.localToGlobal(Offset.zero);
+
+          // Sonuçlar kartının üst kısmına scroll yap
+          _scrollController.animateTo(
+            _scrollController.offset + position.dy - 100, // 100px üstten boşluk
+            duration: const Duration(milliseconds: 1000),
+            curve: Curves.easeInOut,
+          );
+        }
+      });
+    } else {
+      setState(() {
+        _bmi = null;
+        _bmr = null;
+        _tdee = null;
+        _isCalculating = false;
+        _showResults = false;
+        _recommendation = 'Lütfen geçerli bir boy, kilo ve yaş girin.';
+      });
+    }
   }
 
   /// BMI, BMR ve TDEE hesaplar ve öneri üretir.
@@ -365,6 +532,41 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     } else {
       return Colors.red;
     }
+  }
+
+  /// UserProvider'dan kullanıcı verilerini yükler ve form alanlarına doldurur
+  void _loadUserDataFromProvider() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _isLoadingForm = true;
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      
+      // Eğer form alanları boşsa ve UserProvider'da veri varsa, formu doldur
+      if (_heightController.text.isEmpty && userProvider.height > 0) {
+        _heightController.text = userProvider.height.toString();
+      }
+      if (_weightController.text.isEmpty && userProvider.weight > 0) {
+        _weightController.text = userProvider.weight.toString();
+      }
+      if (_ageController.text.isEmpty && userProvider.age > 0) {
+        _ageController.text = userProvider.age.toString();
+      }
+      if (_nameController.text.isEmpty && userProvider.name.isNotEmpty) {
+        _nameController.text = userProvider.name;
+      }
+      
+      // Dropdown değerlerini güncelle
+      if (userProvider.gender.isNotEmpty && _genderOptions.contains(userProvider.gender)) {
+        _gender = userProvider.gender;
+      }
+      if (userProvider.activityLevel.isNotEmpty && _activityMultipliers.containsKey(userProvider.activityLevel)) {
+        _activityLevel = userProvider.activityLevel;
+      }
+      if (userProvider.goal.isNotEmpty && _purposeOptions.contains(userProvider.goal)) {
+        _purpose = userProvider.goal;
+      }
+      
+      _isLoadingForm = false;
+    });
   }
 
   @override
@@ -867,7 +1069,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: _isCalculating ? null : _calculateBMI,
+                        onPressed: _isCalculating ? null : _calculateResults,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: analyticsColor,
                           foregroundColor: Colors.white,

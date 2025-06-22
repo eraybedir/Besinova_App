@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../providers/optimization_provider.dart';
 import '../providers/user_provider.dart';
 import '../../data/services/product_data_service.dart';
@@ -170,12 +171,34 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                               ),
                             ),
                             const SizedBox(width: 12),
-                            const Text(
-                              'Optimize Edilmiş Liste',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Optimize Edilmiş Liste',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  Consumer<UserProvider>(
+                                    builder: (context, userProvider, child) {
+                                      final user = userProvider.user;
+                                      if (user != null) {
+                                        return Text(
+                                          '${user.name} • ${user.budget.toStringAsFixed(0)} ₺ bütçe',
+                                          style: TextStyle(
+                                            color: Colors.white.withValues(alpha: 0.7),
+                                            fontSize: 12,
+                                          ),
+                                        );
+                                      }
+                                      return const SizedBox.shrink();
+                                    },
+                                  ),
+                                ],
                               ),
                             ),
                           ],
@@ -397,78 +420,120 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
           width: 1,
         ),
       ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
-        leading: Container(
-          width: 60,
-          height: 60,
-          decoration: BoxDecoration(
-            color: shoppingColor.withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(
-            _getCategoryIcon(item.category),
-            color: shoppingColor,
-            size: 28,
-          ),
-        ),
-        title: Text(
-          item.productName,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Text(
-              '${item.category} • ${item.quantity.toStringAsFixed(1)} ${item.unit}',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.7),
-                fontSize: 12,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: GestureDetector(
+          onTap: () {
+            _showItemDetailsDialog(context, item);
+          },
+          child: Row(
+            children: [
+              // Product image or category icon
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: shoppingColor.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: item.imageUrl.isNotEmpty
+                      ? CachedNetworkImage(
+                          imageUrl: item.imageUrl,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => Container(
+                            color: shoppingColor.withValues(alpha: 0.2),
+                            child: Icon(
+                              _getCategoryIcon(item.category),
+                              color: shoppingColor,
+                              size: 28,
+                            ),
+                          ),
+                          errorWidget: (context, url, error) => Container(
+                            color: shoppingColor.withValues(alpha: 0.2),
+                            child: Icon(
+                              _getCategoryIcon(item.category),
+                              color: shoppingColor,
+                              size: 28,
+                            ),
+                          ),
+                        )
+                      : Icon(
+                          _getCategoryIcon(item.category),
+                          color: shoppingColor,
+                          size: 28,
+                        ),
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                _buildNutritionChip('${item.calories.toStringAsFixed(0)} kcal', Colors.orange),
-                const SizedBox(width: 4),
-                _buildNutritionChip('${item.protein.toStringAsFixed(1)}g protein', Colors.green),
-                const SizedBox(width: 4),
-                _buildNutritionChip('${item.carbs.toStringAsFixed(1)}g karbonhidrat', Colors.blue),
-              ],
-            ),
-          ],
-        ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              '${(item.price * item.quantity).toStringAsFixed(2)} ₺',
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
+              const SizedBox(width: 16),
+              // Main content
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.productName,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${item.category} • ${item.quantity.toStringAsFixed(1)} ${item.unit}',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.7),
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          _buildNutritionChip('${item.calories.toStringAsFixed(0)} kcal', Colors.orange),
+                          const SizedBox(width: 4),
+                          _buildNutritionChip('${item.protein.toStringAsFixed(1)}g protein', Colors.green),
+                          const SizedBox(width: 4),
+                          _buildNutritionChip('${item.carbs.toStringAsFixed(1)}g karbonhidrat', Colors.blue),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Checkbox(
-              value: item.isChecked,
-              onChanged: (value) {
-                provider.toggleItemChecked(item.id);
-              },
-              activeColor: shoppingColor,
-              checkColor: Colors.white,
-            ),
-          ],
+              const SizedBox(width: 16),
+              // Trailing content
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '${(item.price * item.quantity).toStringAsFixed(2)} ₺',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Checkbox(
+                    value: item.isChecked,
+                    onChanged: (value) {
+                      provider.toggleItemChecked(item.id);
+                    },
+                    activeColor: shoppingColor,
+                    checkColor: Colors.white,
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
-        onTap: () {
-          _showItemDetailsDialog(context, item);
-        },
       ),
     );
   }
@@ -510,13 +575,57 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
   }
 
   void _showItemDetailsDialog(BuildContext context, ShoppingItem item) {
+    const Color shoppingColor = Color(0xFFFF6B6B);
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF2C3E50),
-        title: Text(
-          item.productName,
-          style: const TextStyle(color: Colors.white),
+        title: Column(
+          children: [
+            // Product image
+            if (item.imageUrl.isNotEmpty)
+              Container(
+                width: 80,
+                height: 80,
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: shoppingColor.withValues(alpha: 0.3),
+                    width: 1,
+                  ),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: CachedNetworkImage(
+                    imageUrl: item.imageUrl,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Container(
+                      color: shoppingColor.withValues(alpha: 0.2),
+                      child: Icon(
+                        _getCategoryIcon(item.category),
+                        color: shoppingColor,
+                        size: 32,
+                      ),
+                    ),
+                    errorWidget: (context, url, error) => Container(
+                      color: shoppingColor.withValues(alpha: 0.2),
+                      child: Icon(
+                        _getCategoryIcon(item.category),
+                        color: shoppingColor,
+                        size: 32,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            Text(
+              item.productName,
+              style: const TextStyle(color: Colors.white),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,

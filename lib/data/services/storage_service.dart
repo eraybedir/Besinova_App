@@ -24,6 +24,8 @@ class StorageService {
 
   /// Save user data to local storage
   static Future<void> saveUser(User user) async {
+    print('🔧 StorageService.saveUser() called with budget: ${user.budget}');
+    
     final batch = <Future<bool>>[
       prefs.setString(AppConstants.storageKeyName, user.name),
       prefs.setString(AppConstants.storageKeyEmail, user.email),
@@ -43,10 +45,15 @@ class StorageService {
     ];
 
     await Future.wait(batch);
+    print('🔧 StorageService.saveUser() - budget saved to SharedPreferences: ${prefs.getDouble(AppConstants.storageKeyBudget)}');
   }
 
   /// Load user data from local storage
-  static Future<User> loadUser() async => User(
+  static Future<User> loadUser() async {
+    final loadedBudget = prefs.getDouble(AppConstants.storageKeyBudget) ?? AppConstants.defaultBudget;
+    print('🔧 StorageService.loadUser() - budget loaded from SharedPreferences: $loadedBudget');
+    
+    final user = User(
         name: prefs.getString(AppConstants.storageKeyName) ??
             AppConstants.defaultName,
         email: prefs.getString(AppConstants.storageKeyEmail) ??
@@ -71,12 +78,15 @@ class StorageService {
             DateTime.now().toString(),
         completedGoals:
             prefs.getInt(AppConstants.storageKeyCompletedGoals) ?? 0,
-        budget: prefs.getDouble(AppConstants.storageKeyBudget) ??
-            AppConstants.defaultBudget,
+        budget: loadedBudget,
         notificationCount:
             prefs.getInt(AppConstants.storageKeyNotificationCount) ??
                 AppConstants.defaultNotificationCount,
       );
+    
+    print('🔧 StorageService.loadUser() - created user with budget: ${user.budget}');
+    return user;
+  }
 
   /// Check if user has an account
   static Future<bool> hasAccount() async {

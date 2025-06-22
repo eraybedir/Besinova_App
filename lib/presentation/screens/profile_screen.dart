@@ -74,7 +74,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    Provider.of<UserProvider>(context, listen: false).loadUserData();
+    // Provider.of<UserProvider>(context, listen: false).loadUserData(); // Removed - causing setState during build
   }
 
   /// Avatar seçimi için dialog açar ve seçilen avatarı UserProvider'a kaydeder.
@@ -114,199 +114,203 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final profile = _profileData;
-    final userName = profile?['name'] ?? 'Hoş geldin!';
-    final userEmail = profile?['email'] ?? '';
-    final userHeight = profile?['height'] ?? '';
-    final userWeight = profile?['weight'] ?? '';
-    final userAge = profile?['age'] ?? '';
-    final userGender = profile?['gender'] ?? '';
-    final userActivityLevel = profile?['activityLevel'] ?? '';
-    final userGoal = profile?['purpose'] ?? '';
-    final userLoginCount = profile?['loginCount'] ?? '';
-    final userLastLogin = profile?['lastLogin'] ?? '';
-    final userCompletedGoals = profile?['completedGoals'] ?? '';
-    final userAvatar = profile?['avatar'] ?? _selectedAvatar;
+    return Consumer<UserProvider>(
+      builder: (context, userProvider, child) {
+        final user = userProvider.user;
+        final userName = user?.name ?? 'Hoş geldin!';
+        final userEmail = user?.email ?? '';
+        final userHeight = user?.height?.toString() ?? '';
+        final userWeight = user?.weight?.toString() ?? '';
+        final userAge = user?.age?.toString() ?? '';
+        final userGender = user?.gender ?? '';
+        final userActivityLevel = user?.activityLevel ?? '';
+        final userGoal = user?.goal ?? '';
+        final userLoginCount = user?.loginCount?.toString() ?? '';
+        final userLastLogin = user?.lastLogin ?? '';
+        final userCompletedGoals = user?.completedGoals?.toString() ?? '';
+        final userAvatar = user?.avatar ?? _selectedAvatar;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF2C3E50),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF52796F).withValues(alpha: 0.95),
-        elevation: 0,
-        title: const Text(
-          'Profil',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              const Color(0xFF52796F).withValues(alpha: 0.8),
-              const Color(0xFF2C3E50),
-            ],
-            stops: const [0.0, 0.6],
-          ),
-        ),
-        child: SafeArea(
-          child: Stack(
-            children: [
-              // Dekoratif arka plan daireleri
-              Positioned(
-                right: -50,
-                top: -50,
-                child: Container(
-                  width: 200,
-                  height: 200,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: const Color(0xFFA3EBB1).withValues(alpha: 0.1),
-                  ),
-                ),
+        return Scaffold(
+          backgroundColor: const Color(0xFF2C3E50),
+          appBar: AppBar(
+            backgroundColor: const Color(0xFF52796F).withValues(alpha: 0.95),
+            elevation: 0,
+            title: const Text(
+              'Profil',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
               ),
-              Positioned(
-                left: -30,
-                bottom: -30,
-                child: Container(
-                  width: 150,
-                  height: 150,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: const Color(0xFF52796F).withValues(alpha: 0.1),
-                  ),
-                ),
+            ),
+            centerTitle: true,
+          ),
+          body: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  const Color(0xFF52796F).withValues(alpha: 0.8),
+                  const Color(0xFF2C3E50),
+                ],
+                stops: const [0.0, 0.6],
               ),
-              // Ana içerik
-              SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: [
-                    // Avatar ve isim
-                    Column(
-                      children: [
-                        // Avatar seçimi (tıklayınca değiştir)
-                        GestureDetector(
-                          onTap: _chooseAvatar,
-                          child: CircleAvatar(
-                            radius: 48,
-                            backgroundColor:
-                                Colors.white.withValues(alpha: 0.15),
-                            child: Text(
-                              userAvatar,
-                              style: const TextStyle(fontSize: 48),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        // Kullanıcı adı
-                        Text(
-                          userName.toString().isNotEmpty ? userName.toString() : 'Hoş geldin!',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.2,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        // Kullanıcı email
-                        Text(
-                          userEmail.toString(),
-                          style: const TextStyle(
-                            color: Color(0xFFFFB86C),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        // Avatarı değiştir butonu
-                        TextButton(
-                          onPressed: _chooseAvatar,
-                          child: const Text('Avatarı Değiştir'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    // Vücut ölçüleri kartı
-                    _buildInfoCard(
-                      title: 'Vücut Ölçüleri',
-                      icon: Icons.monitor_weight_outlined,
-                      children: [
-                        _buildInfoRow(
-                            'Boy', userHeight.toString().isNotEmpty ? '${userHeight.toString()} cm' : '-'),
-                        _buildInfoRow(
-                            'Kilo', userWeight.toString().isNotEmpty ? '${userWeight.toString()} kg' : '-'),
-                        _buildInfoRow(
-                            'Yaş', userAge.toString().isNotEmpty ? userAge.toString() : '-'),
-                        _buildInfoRow('Cinsiyet', userGender.toString().isNotEmpty ? userGender.toString() : '-'),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    // Aktivite ve hedef kartı
-                    _buildInfoCard(
-                      title: 'Aktivite ve Hedef',
-                      icon: Icons.fitness_center,
-                      children: [
-                        _buildInfoRow('Aktivite Seviyesi', userActivityLevel.toString()),
-                        _buildInfoRow('Hedef', userGoal.toString()),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    // İstatistikler kartı (örnek veriler)
-                    _buildInfoCard(
-                      title: 'İstatistikler',
-                      icon: Icons.analytics_outlined,
-                      children: [
-                        _buildInfoRow(
-                            'Toplam Giriş', userLoginCount.toString()),
-                        _buildInfoRow('Son Giriş',
-                            userLastLogin.toString().isNotEmpty ? userLastLogin.toString() : '-'),
-                        _buildInfoRow('Tamamlanan Hedefler',
-                            userCompletedGoals.toString()),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    // Çıkış butonu
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: ElevatedButton(
-                        onPressed: _signOut,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red.withValues(alpha: 0.2),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(
-                              color: Colors.red.withValues(alpha: 0.3),
-                              width: 1,
-                            ),
-                          ),
-                        ),
-                        child: const Text(
-                          'Çıkış Yap',
-                          style: TextStyle(
-                            color: Color(0xFFFFB86C),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.2,
-                          ),
-                        ),
+            ),
+            child: SafeArea(
+              child: Stack(
+                children: [
+                  // Dekoratif arka plan daireleri
+                  Positioned(
+                    right: -50,
+                    top: -50,
+                    child: Container(
+                      width: 200,
+                      height: 200,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: const Color(0xFFA3EBB1).withValues(alpha: 0.1),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                  Positioned(
+                    left: -30,
+                    bottom: -30,
+                    child: Container(
+                      width: 150,
+                      height: 150,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: const Color(0xFF52796F).withValues(alpha: 0.1),
+                      ),
+                    ),
+                  ),
+                  // Ana içerik
+                  SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      children: [
+                        // Avatar ve isim
+                        Column(
+                          children: [
+                            // Avatar seçimi (tıklayınca değiştir)
+                            GestureDetector(
+                              onTap: _chooseAvatar,
+                              child: CircleAvatar(
+                                radius: 48,
+                                backgroundColor:
+                                    Colors.white.withValues(alpha: 0.15),
+                                child: Text(
+                                  userAvatar,
+                                  style: const TextStyle(fontSize: 48),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            // Kullanıcı adı
+                            Text(
+                              userName.toString().isNotEmpty ? userName.toString() : 'Hoş geldin!',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            // Kullanıcı email
+                            Text(
+                              userEmail.toString(),
+                              style: const TextStyle(
+                                color: Color(0xFFFFB86C),
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            // Avatarı değiştir butonu
+                            TextButton(
+                              onPressed: _chooseAvatar,
+                              child: const Text('Avatarı Değiştir'),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                        // Vücut ölçüleri kartı
+                        _buildInfoCard(
+                          title: 'Vücut Ölçüleri',
+                          icon: Icons.monitor_weight_outlined,
+                          children: [
+                            _buildInfoRow(
+                                'Boy', userHeight.isNotEmpty ? '${userHeight} cm' : '-'),
+                            _buildInfoRow(
+                                'Kilo', userWeight.isNotEmpty ? '${userWeight} kg' : '-'),
+                            _buildInfoRow(
+                                'Yaş', userAge.isNotEmpty ? userAge : '-'),
+                            _buildInfoRow('Cinsiyet', userGender.isNotEmpty ? userGender : '-'),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        // Aktivite ve hedef kartı
+                        _buildInfoCard(
+                          title: 'Aktivite ve Hedef',
+                          icon: Icons.fitness_center,
+                          children: [
+                            _buildInfoRow('Aktivite Seviyesi', userActivityLevel),
+                            _buildInfoRow('Hedef', userGoal),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        // İstatistikler kartı (örnek veriler)
+                        _buildInfoCard(
+                          title: 'İstatistikler',
+                          icon: Icons.analytics_outlined,
+                          children: [
+                            _buildInfoRow(
+                                'Toplam Giriş', userLoginCount),
+                            _buildInfoRow('Son Giriş',
+                                userLastLogin.isNotEmpty ? userLastLogin : '-'),
+                            _buildInfoRow('Tamamlanan Hedefler',
+                                userCompletedGoals),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                        // Çıkış butonu
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: ElevatedButton(
+                            onPressed: _signOut,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red.withValues(alpha: 0.2),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                side: BorderSide(
+                                  color: Colors.red.withValues(alpha: 0.3),
+                                  width: 1,
+                                ),
+                              ),
+                            ),
+                            child: const Text(
+                              'Çıkış Yap',
+                              style: TextStyle(
+                                color: Color(0xFFFFB86C),
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 

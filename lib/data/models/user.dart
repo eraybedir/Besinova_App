@@ -104,10 +104,20 @@ class User {
 
   @override
   bool operator ==(Object other) =>
-      identical(this, other) || other is User && other.email == email;
+      identical(this, other) || 
+      other is User && 
+      other.email == email &&
+      other.budget == budget &&
+      other.name == name &&
+      other.height == height &&
+      other.weight == weight &&
+      other.age == age &&
+      other.gender == gender &&
+      other.activityLevel == activityLevel &&
+      other.goal == goal;
 
   @override
-  int get hashCode => email.hashCode;
+  int get hashCode => Object.hash(email, budget, name, height, weight, age, gender, activityLevel, goal);
 
   @override
   String toString() => 'User(name: $name, email: $email, budget: $budget)';

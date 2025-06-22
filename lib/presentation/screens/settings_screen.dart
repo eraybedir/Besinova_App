@@ -173,16 +173,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    _fixLegacyBudget();
-  }
-
-  Future<void> _fixLegacyBudget() async {
-    final prefs = await SharedPreferences.getInstance();
-    final double? oldBudget = prefs.getDouble('budget');
-    if (oldBudget != null && oldBudget == 5000.0) {
-      await prefs.setDouble('budget', 0.0);
-      if (mounted) setState(() {});
-    }
+    // Ensure user data is loaded when settings screen opens
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      if (userProvider.user == null) {
+        print('🔧 SettingsScreen - UserProvider user is null, loading user data');
+        userProvider.loadUserData();
+      } else {
+        print('🔧 SettingsScreen - UserProvider user loaded, budget: ${userProvider.budget}');
+      }
+    });
   }
 
   Future<void> _editProfile() async {
@@ -299,7 +299,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    debugResetBudget(); // DEBUG: her build'de bütçeyi sıfırla
     final userProvider = Provider.of<UserProvider>(context);
 
     // Tema renkleri
@@ -665,8 +664,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildBudgetSetting() {
-    final userProvider = Provider.of<UserProvider>(context);
+    final userProvider = Provider.of<UserProvider>(context, listen: true);
     final currentBudget = userProvider.budget;
+    final hasSetBudget = userProvider.hasSetBudget;
+    
+    print('🔧 SettingsScreen._buildBudgetSetting - currentBudget: $currentBudget');
+    print('🔧 SettingsScreen._buildBudgetSetting - userProvider.budget: ${userProvider.budget}');
+    print('🔧 SettingsScreen._buildBudgetSetting - hasSetBudget: $hasSetBudget');
 
     return ListTile(
       contentPadding: EdgeInsets.zero,
@@ -680,11 +684,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ),
       subtitle: Text(
-        currentBudget > 0
+        hasSetBudget
             ? 'Bütçeniz: ₺${currentBudget.toStringAsFixed(0)}'
             : 'Bütçe belirlenmedi',
         style: TextStyle(
-          color: currentBudget > 0 ? settingsColor : Colors.white60,
+          color: hasSetBudget ? settingsColor : Colors.white60,
           fontSize: 14,
           fontWeight: FontWeight.w600,
         ),
@@ -878,9 +882,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
               onPressed: () async {
+                print('🔧 Budget dialog save button pressed with selectedBudget: $selectedBudget');
                 await userProvider.setBudget(selectedBudget);
-                if (mounted) setState(() {}); // Ekranı güncelle
+                print('🔧 Budget saved, closing dialog');
                 Navigator.of(context).pop();
+                // Force rebuild of the settings screen to show updated budget
+                if (mounted) {
+                  print('🔧 SettingsScreen setState() called to rebuild UI');
+                  setState(() {});
+                }
+                // Also notify the UserProvider to ensure UI updates
+                userProvider.notifyListeners();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
@@ -930,11 +942,5 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ),
     );
-  }
-
-  Future<void> debugResetBudget() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble('budget', 0.0);
-    // print('Bütçe sıfırlandı!');
   }
 }
