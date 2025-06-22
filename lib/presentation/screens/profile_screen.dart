@@ -33,6 +33,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     _loadProfileFromAnalytics();
+    _loadSelectedAvatar();
   }
 
   Future<void> _loadProfileFromAnalytics() async {
@@ -49,8 +50,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _loadSelectedAvatar() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? savedAvatar = prefs.getString('selected_avatar');
+    if (savedAvatar != null) {
+      print('DEBUG: Loading saved avatar: $savedAvatar');
+      setState(() {
+        _selectedAvatar = savedAvatar;
+      });
+    } else {
+      print('DEBUG: No saved avatar found, using default: $_selectedAvatar');
+    }
+  }
+
   Future<void> _saveAvatarToProfile(String avatar) async {
     final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('selected_avatar', avatar);
+    
     final String? profilesString = prefs.getString('profiles');
     final int? selectedIndex = prefs.getInt('selectedProfileIndex');
     if (profilesString != null && selectedIndex != null) {
@@ -107,7 +123,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       color: _selectedAvatar == avatar
                           ? Colors.white
                           : Colors.white.withValues(alpha: 0.7),
-                      fontSize: 12,
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -118,11 +134,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       ),
     );
+    
     if (chosen != null && chosen != _selectedAvatar) {
+      print('DEBUG: Updating avatar from $_selectedAvatar to $chosen');
+      
+      // Update local state first
       setState(() {
         _selectedAvatar = chosen;
       });
+      
+      // Save to storage
       await _saveAvatarToProfile(chosen);
+      
+      // Update user provider
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      await userProvider.setAvatar(chosen);
+      
+      print('DEBUG: Avatar updated to: $_selectedAvatar');
+      print('DEBUG: UserProvider avatar after update: ${userProvider.avatar}');
+      
+      // Force a rebuild of the entire app to ensure all Consumer widgets update
+      if (mounted) {
+        setState(() {});
+      }
     }
   }
 
@@ -214,7 +248,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 backgroundColor:
                                     Colors.white.withValues(alpha: 0.15),
                                 child: Text(
-                                  userAvatar,
+                                  _selectedAvatar,
                                   style: const TextStyle(fontSize: 48),
                                 ),
                               ),
@@ -282,7 +316,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             _buildInfoRow(
                                 'Toplam Giriş', userLoginCount),
                             _buildInfoRow('Son Giriş',
-                                userLastLogin.isNotEmpty ? userLastLogin : '-'),
+                                userLastLogin.isNotEmpty ? _formatLastLogin(userLastLogin) : '-'),
                             _buildInfoRow('Tamamlanan Hedefler',
                                 userCompletedGoals),
                           ],
@@ -427,5 +461,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
     );
+  }
+
+  String _formatLastLogin(String lastLogin) {
+    try {
+      final DateTime dateTime = DateTime.parse(lastLogin);
+      final String formattedDate = '${dateTime.day.toString().padLeft(2, '0')}/${dateTime.month.toString().padLeft(2, '0')}/${dateTime.year}';
+      final String formattedTime = '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+      return '$formattedDate $formattedTime';
+    } catch (e) {
+      return lastLogin;
+    }
   }
 }

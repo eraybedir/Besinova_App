@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_constants.dart';
 import '../../data/models/user.dart';
 import '../../data/services/storage_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Provider for managing user state and data
 class UserProvider extends ChangeNotifier {
@@ -50,12 +51,20 @@ class UserProvider extends ChangeNotifier {
       await StorageService.init();
       User loadedUser = await StorageService.loadUser();
       
+      // Load saved avatar from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final String? savedAvatar = prefs.getString('selected_avatar');
+      if (savedAvatar != null && savedAvatar.isNotEmpty) {
+        loadedUser = loadedUser.copyWith(avatar: savedAvatar);
+        print('DEBUG: UserProvider.loadUserData() - loaded saved avatar: $savedAvatar');
+      }
+      
       _user = loadedUser;
       _cachedLastLogin = loadedUser.lastLogin;
       _hasSetBudget = loadedUser.budget != AppConstants.defaultBudget;
       _isLoading = false;
       
-      print('DEBUG: UserProvider.loadUserData() - loaded user: ${_user?.name}, budget: ${_user?.budget}');
+      print('DEBUG: UserProvider.loadUserData() - loaded user: ${_user?.name}, budget: ${_user?.budget}, avatar: ${_user?.avatar}');
       print('DEBUG: UserProvider.loadUserData() - hasSetBudget: $_hasSetBudget');
       
     } catch (e) {
@@ -163,8 +172,23 @@ class UserProvider extends ChangeNotifier {
   }
 
   /// Update avatar
-  Future<void> setAvatar(String newAvatar) =>
-      updateUserField(avatar: newAvatar);
+  Future<void> setAvatar(String newAvatar) async {
+    print('DEBUG: UserProvider.setAvatar() called with: $newAvatar');
+    print('DEBUG: UserProvider.setAvatar() - current avatar: ${_user?.avatar}');
+    
+    // Save to SharedPreferences first
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('selected_avatar', newAvatar);
+    print('DEBUG: UserProvider.setAvatar() - saved to SharedPreferences: $newAvatar');
+    
+    // Update user data
+    await updateUserField(avatar: newAvatar);
+    print('DEBUG: UserProvider.setAvatar() - updated user avatar to: ${_user?.avatar}');
+    
+    // Force notify listeners
+    notifyListeners();
+    print('DEBUG: UserProvider.setAvatar() - notified listeners');
+  }
 
   /// Update name
   Future<void> setName(String newName) => updateUserField(name: newName);

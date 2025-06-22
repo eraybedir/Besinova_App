@@ -308,7 +308,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: tropicalLime,
                             foregroundColor: midnightBlue,
-                            padding: const EdgeInsets.symmetric(vertical: 18),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
@@ -318,8 +318,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           onPressed: _isLoading ? null : _signUp,
                           child: _isLoading
                               ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
+                                  height: 18,
+                                  width: 18,
                                   child: CircularProgressIndicator(
                                     color: midnightBlue,
                                     strokeWidth: 2,
@@ -328,13 +328,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               : const Text(
                                   "Kayıt Ol",
                                   style: TextStyle(
-                                    fontSize: 18,
+                                    fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 20),
 
                       // Divider
                       Row(

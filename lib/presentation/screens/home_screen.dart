@@ -193,6 +193,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       builder: (context, userProvider, child) {
                         return IconButton(
                           onPressed: () {
+                            print('DEBUG: Notification button pressed');
                             // Navigate to notification page
                             Navigator.push(
                               context,
@@ -237,18 +238,15 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                             child: Center(
-                              child: userProvider.avatar.isNotEmpty &&
-                                      userProvider.avatar.length == 2 &&
-                                      userProvider.avatar.codeUnitAt(0) > 255
-                                  ? Text(
-                                      userProvider.avatar,
-                                      style: const TextStyle(fontSize: 20),
-                                    )
-                                  : const Icon(
-                                      Icons.person,
-                                      color: Colors.white,
-                                      size: 24,
-                                    ),
+                              child: Consumer<UserProvider>(
+                                builder: (context, userProvider, child) {
+                                  print('DEBUG: Home screen avatar display - userProvider.avatar: ${userProvider.avatar}');
+                                  return Text(
+                                    userProvider.avatar.isNotEmpty ? userProvider.avatar : '👤',
+                                    style: const TextStyle(fontSize: 20),
+                                  );
+                                },
+                              ),
                             ),
                           ),
                         );
@@ -415,10 +413,14 @@ class HomeContent extends StatelessWidget {
                             color: Colors.white.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          child: const Icon(
-                            Icons.person,
-                            color: Colors.white,
-                            size: 28,
+                          child: Consumer<UserProvider>(
+                            builder: (context, userProvider, child) {
+                              print('DEBUG: Home content avatar display - userProvider.avatar: ${userProvider.avatar}');
+                              return Text(
+                                userProvider.avatar.isNotEmpty ? userProvider.avatar : '👤',
+                                style: const TextStyle(fontSize: 28),
+                              );
+                            },
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -530,105 +532,105 @@ class HomeContent extends StatelessWidget {
                           // Ana içerik: animasyonlu grid kartlar
                           Padding(
                             padding: const EdgeInsets.symmetric(
-                              vertical: 24,
+                              vertical: 20,
                               horizontal: 16,
                             ),
-                            child: Center(
-                              child: AnimationLimiter(
-                                child: GridView.count(
-                                  crossAxisCount: 2,
-                                  crossAxisSpacing: 12,
-                                  mainAxisSpacing: 12,
-                                  childAspectRatio: 0.75,
-                                  padding: const EdgeInsets.all(12),
-                                  children:
-                                      AnimationConfiguration.toStaggeredList(
-                                    duration: const Duration(milliseconds: 375),
-                                    childAnimationBuilder: (widget) =>
-                                        SlideAnimation(
-                                      horizontalOffset: 50.0,
-                                      child: FadeInAnimation(
-                                        child: widget,
-                                      ),
+                            child: AnimationLimiter(
+                              child: GridView.count(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                                childAspectRatio: 0.8,
+                                padding: const EdgeInsets.all(8),
+                                shrinkWrap: true,
+                                physics: const BouncingScrollPhysics(),
+                                children:
+                                    AnimationConfiguration.toStaggeredList(
+                                  duration: const Duration(milliseconds: 375),
+                                  childAnimationBuilder: (widget) =>
+                                      SlideAnimation(
+                                    horizontalOffset: 50.0,
+                                    child: FadeInAnimation(
+                                      child: widget,
                                     ),
-                                    children: [
-                                      // Ana fonksiyon kartları
-                                      _buildHomeCard(
-                                        icon: Icons.shopping_cart_outlined,
-                                        title: 'Alışveriş\nListem',
-                                        subtitle: 'Alışveriş listeni\nyönet',
-                                        onTap: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                                builder: (_) =>
-                                                    const ShoppingListScreen()),
-                                          );
-                                        },
-                                        iconColor: const Color(0xFFFF6B6B),
-                                        iconBackgroundColor:
-                                            const Color(0xFFFF6B6B)
-                                                .withValues(alpha: 0.15),
-                                      ),
-                                      _buildHomeCard(
-                                        icon: Icons.restaurant_menu_outlined,
-                                        title: 'Besin\nÖnerileri',
-                                        subtitle: 'Sağlıklı\nbeslenme',
-                                        onTap: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (_) => NutritionScreen(
-                                                iconColor:
-                                                    const Color(0xFFFFB86C),
-                                                detailText:
-                                                    'Sağlıklı beslenme için öneriler ve ipuçları!',
-                                                products: productList.take(30).toList(),
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                        iconColor: const Color(0xFFFFB86C),
-                                        iconBackgroundColor:
-                                            const Color(0xFFFFB86C)
-                                                .withValues(alpha: 0.15),
-                                      ),
-                                      _buildHomeCard(
-                                        icon: Icons.analytics_outlined,
-                                        title: 'Analizlerim',
-                                        subtitle: 'Vücut analizi\nve öneriler',
-                                        onTap: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                                builder: (_) =>
-                                                    const AnalyticsScreen()),
-                                          );
-                                        },
-                                        iconColor: const Color(0xFF50FA7B),
-                                        iconBackgroundColor:
-                                            const Color(0xFF50FA7B)
-                                                .withValues(alpha: 0.15),
-                                      ),
-                                      _buildHomeCard(
-                                        icon: Icons.settings_outlined,
-                                        title: 'Ayarlar',
-                                        subtitle: 'Uygulama\nayarları',
-                                        onTap: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                                builder: (_) =>
-                                                    const SettingsScreen()),
-                                          );
-                                        },
-                                        iconColor: const Color(0xFFBD93F9),
-                                        iconBackgroundColor:
-                                            const Color(0xFFBD93F9)
-                                                .withValues(alpha: 0.15),
-                                      ),
-                                    ],
                                   ),
+                                  children: [
+                                    // Ana fonksiyon kartları
+                                    _buildHomeCard(
+                                      icon: Icons.shopping_cart_outlined,
+                                      title: 'Alışveriş\nListem',
+                                      subtitle: 'Alışveriş listeni\nyönet',
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (_) =>
+                                                  const ShoppingListScreen()),
+                                        );
+                                      },
+                                      iconColor: const Color(0xFFFF6B6B),
+                                      iconBackgroundColor:
+                                          const Color(0xFFFF6B6B)
+                                              .withValues(alpha: 0.15),
+                                    ),
+                                    _buildHomeCard(
+                                      icon: Icons.restaurant_menu_outlined,
+                                      title: 'Besin\nÖnerileri',
+                                      subtitle: 'Sağlıklı\nbeslenme',
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => NutritionScreen(
+                                              iconColor:
+                                                  const Color(0xFFFFB86C),
+                                              detailText:
+                                                  'Sağlıklı beslenme için öneriler ve ipuçları!',
+                                              products: productList.take(30).toList(),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      iconColor: const Color(0xFFFFB86C),
+                                      iconBackgroundColor:
+                                          const Color(0xFFFFB86C)
+                                              .withValues(alpha: 0.15),
+                                    ),
+                                    _buildHomeCard(
+                                      icon: Icons.analytics_outlined,
+                                      title: 'Analizlerim',
+                                      subtitle: 'Vücut analizi\nve öneriler',
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (_) =>
+                                                  const AnalyticsScreen()),
+                                        );
+                                      },
+                                      iconColor: const Color(0xFF50FA7B),
+                                      iconBackgroundColor:
+                                          const Color(0xFF50FA7B)
+                                              .withValues(alpha: 0.15),
+                                    ),
+                                    _buildHomeCard(
+                                      icon: Icons.settings_outlined,
+                                      title: 'Ayarlar',
+                                      subtitle: 'Uygulama\nayarları',
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (_) =>
+                                                  const SettingsScreen()),
+                                        );
+                                      },
+                                      iconColor: const Color(0xFFBD93F9),
+                                      iconBackgroundColor:
+                                          const Color(0xFFBD93F9)
+                                              .withValues(alpha: 0.15),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
@@ -637,13 +639,13 @@ class HomeContent extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 12),
                   // Alt bilgi
                   const Text(
                     'Besinova v1.0.0 • Sağlıklı yaşa 💚',
-                    style: TextStyle(fontSize: 13, color: Color(0xFFFFE0B2)),
+                    style: TextStyle(fontSize: 12, color: Color(0xFFFFE0B2)),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
                 ],
               ),
             ),
