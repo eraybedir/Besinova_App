@@ -10,6 +10,8 @@ import '../providers/optimization_provider.dart';
 import '../providers/user_provider.dart';
 import '../../data/services/product_data_service.dart';
 import '../../data/models/shopping_item.dart';
+import '../../data/models/product.dart';
+import '../widgets/market_finder_widget.dart';
 
 /// Alışveriş listesi ekranı: Kullanıcı burada optimize edilmiş alışveriş ürünlerini görecek.
 class ShoppingListScreen extends StatefulWidget {
@@ -30,7 +32,6 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     super.initState();
     // Use the actual categories from the product data
     categories = ['Tümü', 'Meyve & Sebze', 'Süt & Kahvaltı', 'Et & Tavuk', 'Bakliyat', 'Temel Gıda'];
-    // _runOptimization(); // Removed automatic optimization at startup
   }
 
   void _runOptimization() {
@@ -45,6 +46,25 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
         days: 30,
       );
     }
+  }
+
+  // Convert ShoppingItem to Product for MarketFinderWidget
+  Product _shoppingItemToProduct(ShoppingItem item) {
+    return Product(
+      id: int.tryParse(item.id) ?? 0,
+      name: item.productName,
+      category: item.category,
+      mainGroup: item.mainGroup,
+      subcategory: item.category, // Use category as subcategory since ShoppingItem doesn't have subcategory
+      price: item.price,
+      caloriesPer100g: item.calories,
+      proteinPer100g: item.protein,
+      carbsPer100g: item.carbs,
+      fatPer100g: item.fat,
+      imageUrl: item.imageUrl,
+      market: item.market,
+      createdAt: DateTime.now(), // Add the required createdAt parameter
+    );
   }
 
   @override
@@ -294,6 +314,53 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
 
                         final filteredItems = _getFilteredItems(optimizationProvider);
 
+                        if (!optimizationProvider.hasOptimizationResults) {
+                          return Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.auto_awesome,
+                                  size: 64,
+                                  color: shoppingColor.withValues(alpha: 0.7),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Optimizasyon Henüz Çalıştırılmadı',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Kişiselleştirilmiş alışveriş listesi için\noptimizasyonu çalıştırın',
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.7),
+                                    fontSize: 14,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 24),
+                                ElevatedButton.icon(
+                                  onPressed: _runOptimization,
+                                  icon: const Icon(Icons.auto_awesome),
+                                  label: const Text('Optimizasyonu Çalıştır'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: shoppingColor,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+
                         if (filteredItems.isEmpty) {
                           return Center(
                             child: Column(
@@ -306,7 +373,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
-                                  'Henüz ürün yok',
+                                  'Arama sonucu bulunamadı',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 18,
@@ -315,7 +382,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  'Optimizasyon çalıştırıldıktan sonra ürünler burada görünecek',
+                                  'Farklı bir arama terimi deneyin\nveya filtreleri değiştirin',
                                   style: TextStyle(
                                     color: Colors.white.withValues(alpha: 0.7),
                                     fontSize: 14,
@@ -451,6 +518,17 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
+                      item.market.isNotEmpty ? item.market : 'Market bilgisi yok',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.6),
+                        fontSize: 12,
+                        fontStyle: item.market.isEmpty ? FontStyle.italic : FontStyle.normal,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
                       '${item.category} • ${item.quantity.toStringAsFixed(1)} ${item.unit}',
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.7),
@@ -486,6 +564,12 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
+                  ),
+                  const SizedBox(height: 8),
+                  // Market finder button
+                  MarketFinderWidget(
+                    product: _shoppingItemToProduct(item),
+                    accentColor: shoppingColor,
                   ),
                 ],
               ),
@@ -601,6 +685,12 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
           ],
         ),
         actions: [
+          // Market finder button
+          MarketFinderWidget(
+            product: _shoppingItemToProduct(item),
+            accentColor: shoppingColor,
+          ),
+          const SizedBox(width: 8),
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('Kapat', style: TextStyle(color: Colors.white)),

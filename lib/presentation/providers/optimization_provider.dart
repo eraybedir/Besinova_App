@@ -17,6 +17,7 @@ class OptimizationProvider extends ChangeNotifier {
   List<ShoppingItem> get shoppingItems => _shoppingItems;
   bool get isLoading => _isLoading;
   String? get error => _error;
+  bool get hasOptimizationResults => _shoppingItems.isNotEmpty;
 
   /// Get filtered shopping items by category
   List<ShoppingItem> getShoppingItemsByCategory(String category) {

@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:provider/provider.dart';
 import '../../presentation/presentation.dart';
+import '../widgets/market_finder_widget.dart';
 
 /// Besin önerileri ekranı: Kişiselleştirilmiş besin önerileri ve makro değerleri.
 class NutritionScreen extends StatefulWidget {
@@ -714,7 +715,13 @@ class _NutritionScreenState extends State<NutritionScreen>
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 8),
+                // Market finder button
+                MarketFinderWidget(
+                  product: product,
+                  accentColor: color,
+                ),
+                const SizedBox(width: 8),
                 // Add to list button - made longer to fill space
                 Expanded(
                   child: ElevatedButton(

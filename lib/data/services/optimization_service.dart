@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:math';
+import 'dart:async';
 import 'package:http/http.dart' as http;
 import '../models/user.dart';
 import '../models/product.dart';
@@ -11,6 +12,11 @@ import '../models/optimization_result.dart';
 class OptimizationService {
   static const String _baseUrl = 'https://shopping-optimizer-api.onrender.com';
   static bool _isInitialized = false;
+  static const String _apiKey = 'AIzaSyAeG0moNtz4jQiVS61NYa3mUYik3eaz29A';
+  
+  // Timeout constants
+  static const Duration _healthCheckTimeout = Duration(seconds: 10);
+  static const Duration _optimizationTimeout = Duration(seconds: 35);
 
   /// Initialize the optimization service
   static Future<bool> initialize() async {
@@ -20,9 +26,9 @@ class OptimizationService {
       // Test gender mapping
       testGenderMapping();
       
-      // Test the server connection
+      // Test the server connection with timeout
       final response = await http.get(Uri.parse('$_baseUrl/health'))
-          .timeout(const Duration(seconds: 10));
+          .timeout(_healthCheckTimeout);
       
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -33,6 +39,9 @@ class OptimizationService {
         print("❌ Server health check failed: ${response.statusCode}");
         return false;
       }
+    } on TimeoutException catch (e) {
+      print("❌ Health check timeout: $e");
+      return false;
     } catch (e) {
       print("❌ Error initializing optimization service: $e");
       return false;
@@ -102,6 +111,9 @@ class OptimizationService {
       }
       
       return result;
+    } on TimeoutException catch (e) {
+      print("ERROR: Optimization timeout: $e");
+      return null;
     } catch (e) {
       print("ERROR: Error in optimization service: $e");
       return null;
@@ -145,13 +157,16 @@ class OptimizationService {
       }
       
       return result;
+    } on TimeoutException catch (e) {
+      print("ERROR: Optimization timeout: $e");
+      return null;
     } catch (e) {
       print("ERROR: Error in optimization service: $e");
       return null;
     }
   }
 
-  /// Call the Render API for optimization
+  /// Call the Render API for optimization with proper timeout handling
   static Future<OptimizationResult?> _callOptimizationAPI(Map<String, dynamic> params) async {
     try {
       print("Calling Render API with params: $params");
@@ -163,7 +178,7 @@ class OptimizationService {
           'Accept': 'application/json',
         },
         body: json.encode(params),
-      ).timeout(const Duration(seconds: 35)); // 35 second timeout
+      ).timeout(_optimizationTimeout);
       
       print("API Response Status: ${response.statusCode}");
       
@@ -175,6 +190,9 @@ class OptimizationService {
         print("API Error: ${errorData['error']}");
         return null;
       }
+    } on TimeoutException catch (e) {
+      print("Error: Optimization API timeout: $e");
+      return null;
     } catch (e) {
       print("Error calling optimization API: $e");
       return null;

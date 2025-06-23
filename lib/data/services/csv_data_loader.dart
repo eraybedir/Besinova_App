@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:csv/csv.dart';
 import '../models/product.dart';
 
@@ -8,7 +10,7 @@ import '../models/product.dart';
 class CsvDataLoader {
   static const String _csvAssetPath = 'assets/enriched_2025_05_21.csv';
   
-  /// Load products from CSV file
+  /// Load products from CSV file with background processing
   static Future<List<Product>> loadProductsFromCsv() async {
     try {
       print("Loading products from CSV file...");
@@ -16,6 +18,18 @@ class CsvDataLoader {
       // Load CSV data from assets
       final String csvData = await rootBundle.loadString('assets/enriched_2025_05_21.csv');
       
+      // Process CSV data in background thread to prevent UI blocking
+      return await compute(_processCsvData, csvData);
+      
+    } catch (e) {
+      print("ERROR: Error loading CSV data: $e");
+      return [];
+    }
+  }
+  
+  /// Process CSV data in background thread
+  static List<Product> _processCsvData(String csvData) {
+    try {
       // Debug: Print first 200 characters to see the format
       print("CSV data preview: ${csvData.substring(0, csvData.length > 200 ? 200 : csvData.length)}");
       
@@ -121,7 +135,7 @@ class CsvDataLoader {
       return products;
       
     } catch (e) {
-      print("ERROR: Error loading CSV data: $e");
+      print("ERROR: Error processing CSV data: $e");
       return [];
     }
   }
@@ -151,7 +165,7 @@ class CsvDataLoader {
     return values;
   }
   
-  /// Load products from a local file (for testing)
+  /// Load products from a local file (for testing) with background processing
   static Future<List<Product>> loadProductsFromFile(String filePath) async {
     try {
       print("Loading products from file: $filePath");
@@ -163,6 +177,20 @@ class CsvDataLoader {
       }
       
       final String csvData = await file.readAsString();
+      
+      // Process CSV data in background thread
+      return await compute(_processFileData, csvData);
+      
+    } catch (e) {
+      print("ERROR: Error loading file data: $e");
+      return [];
+    }
+  }
+  
+  /// Process file data in background thread
+  static List<Product> _processFileData(String csvData) {
+    try {
+      print("Processing file data...");
       
       // Parse CSV
       List<List<dynamic>> csvTable = const CsvToListConverter().convert(csvData);
@@ -201,7 +229,6 @@ class CsvDataLoader {
           
         } catch (e) {
           print("WARNING: Skipping row $i due to error: $e");
-          print("WARNING: Row data: ${csvTable[i]}");
           continue;
         }
       }
@@ -210,7 +237,7 @@ class CsvDataLoader {
       return products;
       
     } catch (e) {
-      print("ERROR: Error loading file data: $e");
+      print("ERROR: Error processing file data: $e");
       return [];
     }
   }

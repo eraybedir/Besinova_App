@@ -3,6 +3,8 @@
 // MaterialApp ile uygulamanın genel temasını ve rotalarını ayarlar.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'dart:ui' as ui;
 import 'package:provider/provider.dart';
 import 'core/constants/app_constants.dart';
 import 'core/theme/app_theme.dart';
@@ -19,15 +21,35 @@ import 'data/services/optimization_service.dart';
 import 'data/services/notification_service.dart';
 
 void main() async {
+  // Ensure Flutter bindings are initialized
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Set up global error handling
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    print('Global Flutter Error: ${details.exception}');
+    print('Stack trace: ${details.stack}');
+  };
+  
+  // Handle platform errors
+  ui.PlatformDispatcher.instance.onError = (error, stack) {
+    print('Platform Error: $error');
+    print('Stack trace: $stack');
+    return true;
+  };
 
-  // Initialize optimization service with gender mapping fix
-  print("Initializing optimization service...");
-  bool optimizationInitialized = await OptimizationService.initialize();
-  if (optimizationInitialized) {
-    print("SUCCESS: Optimization service initialized successfully");
-  } else {
-    print("WARNING: Optimization service initialized with fallback data");
+  try {
+    // Initialize optimization service with gender mapping fix
+    print("Initializing optimization service...");
+    bool optimizationInitialized = await OptimizationService.initialize();
+    if (optimizationInitialized) {
+      print("SUCCESS: Optimization service initialized successfully");
+    } else {
+      print("WARNING: Optimization service initialized with fallback data");
+    }
+  } catch (e) {
+    print("ERROR: Failed to initialize optimization service: $e");
+    // Continue app startup even if optimization service fails
   }
 
   runApp(const BesinovaApp());
@@ -59,6 +81,50 @@ class _BesinovaAppContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
+
+    // Set up global error widget
+    ErrorWidget.builder = (FlutterErrorDetails details) {
+      return Material(
+        child: Container(
+          color: Colors.white,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                color: Colors.red[300],
+                size: 60,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Bir hata oluştu',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[800],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Lütfen uygulamayı yeniden başlatın',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  // Restart the app
+                  SystemNavigator.pop();
+                },
+                child: const Text('Uygulamayı Yeniden Başlat'),
+              ),
+            ],
+          ),
+        ),
+      );
+    };
 
     return MaterialApp(
       title: AppConstants.appName,
