@@ -237,15 +237,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                 width: 2,
                               ),
                             ),
-                            child: Center(
-                              child: Consumer<UserProvider>(
-                                builder: (context, userProvider, child) {
-                                  print('DEBUG: Home screen avatar display - userProvider.avatar: ${userProvider.avatar}');
-                                  return Text(
-                                    userProvider.avatar.isNotEmpty ? userProvider.avatar : '👤',
-                                    style: const TextStyle(fontSize: 20),
-                                  );
-                                },
+                            child: const Center(
+                              child: Icon(
+                                Icons.person,
+                                color: Colors.white,
+                                size: 24,
                               ),
                             ),
                           ),
@@ -407,23 +403,6 @@ class HomeContent extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Consumer<UserProvider>(
-                            builder: (context, userProvider, child) {
-                              print('DEBUG: Home content avatar display - userProvider.avatar: ${userProvider.avatar}');
-                              return Text(
-                                userProvider.avatar.isNotEmpty ? userProvider.avatar : '👤',
-                                style: const TextStyle(fontSize: 28),
-                              );
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 16),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -559,7 +538,7 @@ class HomeContent extends StatelessWidget {
                                     _buildHomeCard(
                                       icon: Icons.shopping_cart_outlined,
                                       title: 'Alışveriş\nListem',
-                                      subtitle: 'Alışveriş listeni\nyönet',
+                                      subtitle: 'Önerilen\nürünleri gör',
                                       onTap: () {
                                         Navigator.push(
                                           context,

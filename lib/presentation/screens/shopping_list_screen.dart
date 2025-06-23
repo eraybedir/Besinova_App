@@ -237,6 +237,8 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                             hintText: 'Ürün ara...',
                             hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
                             prefixIcon: const Icon(Icons.search, color: Colors.white70),
+                            filled: true,
+                            fillColor: Colors.white.withValues(alpha: 0.1),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide(color: shoppingColor.withValues(alpha: 0.3)),

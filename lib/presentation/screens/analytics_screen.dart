@@ -10,6 +10,7 @@ import '../../presentation/presentation.dart';
 import '../../data/data.dart';
 import '../../core/constants/app_constants.dart';
 import 'settings_screen.dart';
+import 'shopping_list_screen.dart';
 
 /// Analiz ekranı: Kullanıcı profilleri, vücut ölçüleri, aktivite seviyesi, amaç ve sonuçlar.
 class AnalyticsScreen extends StatefulWidget {
@@ -1488,7 +1489,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         }
 
         final profile = snapshot.data!;
-        final budget = _parseDouble(profile['budget'], 0.0);
+        // Check both profile data and UserProvider for budget
+        final userProvider = Provider.of<UserProvider>(context, listen: false);
+        final profileBudget = _parseDouble(profile['budget'], 0.0);
+        final userBudget = userProvider.budget;
+        final budget = userBudget > 0 ? userBudget : profileBudget;
         final suggestions = <String>[];
         final optimizedProducts = <Product>[];
 
@@ -1503,7 +1508,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           }
 
           // Optimize edilmiş ürünler (örnek)
-          optimizedProducts.addAll(OptimizationService.getProducts().take(5));
+          optimizedProducts.addAll(ProductDataService.getProductsWithNutrition().take(5));
         }
 
         return Container(
@@ -1574,28 +1579,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                // Bütçe kullanım oranı
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Kullanım Oranı:',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.8),
-                        fontSize: 14,
-                      ),
-                    ),
-                    Text(
-                      '${((optimizedProducts.fold(0.0, (sum, p) => sum + p.price) / budget) * 100).toStringAsFixed(1)}%',
-                      style: const TextStyle(
-                        color: Color(0xFF50FA7B),
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
                 // Öneriler
                 if (suggestions.isNotEmpty) ...[
                   Container(
@@ -1629,29 +1612,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 12),
                 ],
-                // Optimize edilmiş ürün sayısı
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Önerilen Ürün:',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.8),
-                        fontSize: 14,
-                      ),
-                    ),
-                    Text(
-                      '${optimizedProducts.length} ürün',
-                      style: const TextStyle(
-                        color: Color(0xFF50FA7B),
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
               ] else ...[
                 // Bütçe belirlenmemiş durumu
                 Container(
@@ -1709,6 +1670,33 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       side: BorderSide(
                         color: const Color(0xFF50FA7B)
                             .withValues(alpha: 0.3),
+                        width: 1,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Ürün önerilerini gör butonu
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ShoppingListScreen()),
+                    );
+                  },
+                  icon: const Icon(Icons.shopping_cart),
+                  label: const Text('Ürün Önerilerini Gör'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFF6B6B).withValues(alpha: 0.2),
+                    foregroundColor: const Color(0xFFFF6B6B),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(
+                        color: const Color(0xFFFF6B6B).withValues(alpha: 0.3),
                         width: 1,
                       ),
                     ),

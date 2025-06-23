@@ -336,12 +336,14 @@ class _NutritionScreenState extends State<NutritionScreen>
         }
 
         final activityMultipliers = {
-          'Düşük': 1.2,
-          'Orta': 1.55,
-          'Yüksek': 1.725,
+          'Hareketsiz': 1.2,
+          'Az Aktif': 1.375,
+          'Orta Aktif': 1.55,
+          'Çok Aktif': 1.725,
+          'Ekstra Aktif': 1.9,
         };
 
-        final tdee = bmr * (activityMultipliers[activityLevel] ?? 1.55);
+        final tdee = bmr * (activityMultipliers[activityLevel] ?? 1.2);
         final protein = weight * 2.0; // 2g/kg
         final fat = tdee * 0.25 / 9; // %25 yağ
         final carb = (tdee - (protein * 4) - (fat * 9)) / 4; // Kalan karbonhidrat
@@ -420,66 +422,46 @@ class _NutritionScreenState extends State<NutritionScreen>
                             Icons.water_drop, nutritionColor),
                       ],
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              // Günlük hedef kartı
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: nutritionColor.withValues(alpha: 0.3),
-                    width: 1,
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: nutritionLight,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: nutritionColor.withValues(alpha: 0.3),
-                              width: 1,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: nutritionColor.withValues(alpha: 0.2),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            Icons.track_changes,
-                            color: nutritionColor,
-                            size: 24,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        const Text(
-                          'Günlük Hedefler',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
                     const SizedBox(height: 16),
-                    _buildProgressBar('Protein', 45, protein, nutritionColor),
-                    const SizedBox(height: 12),
-                    _buildProgressBar('Karbonhidrat', 120, carb, nutritionColor),
-                    const SizedBox(height: 12),
-                    _buildProgressBar('Yağ', 35, fat, nutritionColor),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: nutritionColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: nutritionColor.withValues(alpha: 0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Günlük Kalori İhtiyacı: ${tdee.toStringAsFixed(0)} kcal',
+                            style: TextStyle(
+                              color: nutritionColor,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'BMR: ${bmr.toStringAsFixed(0)} kcal',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.8),
+                              fontSize: 12,
+                            ),
+                          ),
+                          Text(
+                            'Aktivite Seviyesi: $activityLevel',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.8),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),

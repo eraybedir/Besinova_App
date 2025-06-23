@@ -77,6 +77,29 @@ class _MarketFinderWidgetState extends State<MarketFinderWidget> {
   Future<void> _findNearbyMarkets() async {
     if (_userLocation == null || _disposed) return;
 
+    // Check if this is an online-only market
+    final onlineOnlyMarkets = [
+      'PttAVM',
+      'Pazarama', 
+      'idefix',
+      'Amazon',
+      'Özel Beslenme',
+      'Getir Büyük'
+    ];
+
+    final isOnlineOnly = onlineOnlyMarkets.any((market) => 
+      widget.product.market.toLowerCase().contains(market.toLowerCase())
+    );
+
+    if (isOnlineOnly) {
+      if (_disposed) return;
+      setState(() {
+        _nearbyMarkets = [];
+        _errorMessage = null;
+      });
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
@@ -131,6 +154,22 @@ class _MarketFinderWidgetState extends State<MarketFinderWidget> {
       // Return markets without distances on error
       return markets;
     }
+  }
+
+  /// Check if the current market is online-only
+  bool _isOnlineOnlyMarket() {
+    final onlineOnlyMarkets = [
+      'PttAVM',
+      'Pazarama', 
+      'idefix',
+      'Amazon',
+      'Özel Beslenme',
+      'Getir Büyük'
+    ];
+
+    return onlineOnlyMarkets.any((market) => 
+      widget.product.market.toLowerCase().contains(market.toLowerCase())
+    );
   }
 
   Future<void> _openDirections(MarketInfo market) async {
@@ -235,6 +274,27 @@ class _MarketFinderWidgetState extends State<MarketFinderWidget> {
                         child: Text(
                           _errorMessage!,
                           style: TextStyle(color: Colors.red, fontSize: 12),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else if (_isOnlineOnlyMarket())
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.shopping_cart, color: Colors.blue, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Bu marketler sadece online satış yapıyor.',
+                          style: TextStyle(color: Colors.blue, fontSize: 12),
                         ),
                       ),
                     ],

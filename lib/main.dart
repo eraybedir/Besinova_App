@@ -23,7 +23,7 @@ import 'data/services/notification_service.dart';
 void main() async {
   // Ensure Flutter bindings are initialized
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Set up global error handling
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.presentError(details);
@@ -40,12 +40,12 @@ void main() async {
 
   try {
     // Initialize optimization service with gender mapping fix
-    print("Initializing optimization service...");
-    bool optimizationInitialized = await OptimizationService.initialize();
-    if (optimizationInitialized) {
-      print("SUCCESS: Optimization service initialized successfully");
-    } else {
-      print("WARNING: Optimization service initialized with fallback data");
+  print("Initializing optimization service...");
+  bool optimizationInitialized = await OptimizationService.initialize();
+  if (optimizationInitialized) {
+    print("SUCCESS: Optimization service initialized successfully");
+  } else {
+    print("WARNING: Optimization service initialized with fallback data");
     }
   } catch (e) {
     print("ERROR: Failed to initialize optimization service: $e");
