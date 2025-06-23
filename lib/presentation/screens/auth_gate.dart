@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../data/services/storage_service.dart';
 import 'home_screen.dart';
 import 'signin_screen.dart';
 
-/// Authentication gate that determines which screen to show based on local auth state
+/// Authentication gate that determines which screen to show based on Firebase auth state
 class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
 
@@ -24,11 +25,13 @@ class _AuthGateState extends State<AuthGate> {
   Future<void> _checkAuthStatus() async {
     try {
       await StorageService.init();
-      final hasAccount = await StorageService.hasAccount();
-
+      
+      // Check Firebase authentication state
+      final user = FirebaseAuth.instance.currentUser;
+      
       if (mounted) {
         setState(() {
-          _isAuthenticated = hasAccount;
+          _isAuthenticated = user != null;
           _isLoading = false;
         });
       }

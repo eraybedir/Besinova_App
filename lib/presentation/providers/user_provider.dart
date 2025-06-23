@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import '../../core/constants/app_constants.dart';
-import '../../data/models/user.dart';
-import '../../data/services/storage_service.dart';
+import '../../data/models/user.dart' as app_user;
+import '../../data/services/firebase_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Provider for managing user state and data
 class UserProvider extends ChangeNotifier {
-  User? _user;
+  app_user.User? _user;
   bool _isLoading = false;
   String? _cachedLastLogin;
   bool _hasSetBudget = false; // Track if user has explicitly set a budget
 
   /// Current user data
-  User? get user => _user;
+  app_user.User? get user => _user;
 
   /// Loading state
   bool get isLoading => _isLoading;
@@ -39,7 +40,7 @@ class UserProvider extends ChangeNotifier {
   int get notificationCount =>
       _user?.notificationCount ?? AppConstants.defaultNotificationCount;
 
-  /// Initialize user data from storage
+  /// Initialize user data from Firebase
   Future<void> loadUserData() async {
     if (_isLoading) return;
 
@@ -48,31 +49,50 @@ class UserProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await StorageService.init();
-      User loadedUser = await StorageService.loadUser();
+      // Check if Firebase user exists
+      final firebaseUser = firebase_auth.FirebaseAuth.instance.currentUser;
       
-      // Load saved avatar from SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
-      final String? savedAvatar = prefs.getString('selected_avatar');
-      if (savedAvatar != null && savedAvatar.isNotEmpty) {
-        loadedUser = loadedUser.copyWith(avatar: savedAvatar);
-        print('DEBUG: UserProvider.loadUserData() - loaded saved avatar: $savedAvatar');
+      if (firebaseUser != null) {
+        // Try to load user data from Firebase
+        try {
+          app_user.User loadedUser = await FirebaseService.loadUser();
+          
+          // Load saved avatar from SharedPreferences (keep this local for now)
+          final prefs = await SharedPreferences.getInstance();
+          final String? savedAvatar = prefs.getString('selected_avatar');
+          if (savedAvatar != null && savedAvatar.isNotEmpty) {
+            loadedUser = loadedUser.copyWith(avatar: savedAvatar);
+            print('DEBUG: UserProvider.loadUserData() - loaded saved avatar: $savedAvatar');
+          }
+          
+          _user = loadedUser;
+          _cachedLastLogin = loadedUser.lastLogin;
+          _hasSetBudget = loadedUser.budget != AppConstants.defaultBudget;
+          _isLoading = false;
+          
+          print('DEBUG: UserProvider.loadUserData() - loaded user from Firebase: ${_user?.name}, budget: ${_user?.budget}');
+        } catch (e) {
+          print('DEBUG: UserProvider.loadUserData() - Firebase data not found, creating default user');
+          // Create default user and save to Firebase
+          final defaultUser = _createDefaultUser();
+          await FirebaseService.initializeUserDataIfNeeded(defaultUser);
+          _user = defaultUser;
+          _hasSetBudget = false;
+          _isLoading = false;
+        }
+      } else {
+        // No Firebase user, create default user
+        _user = _createDefaultUser();
+        _hasSetBudget = false;
+        _isLoading = false;
+        print('DEBUG: UserProvider.loadUserData() - no Firebase user, created default user');
       }
-      
-      _user = loadedUser;
-      _cachedLastLogin = loadedUser.lastLogin;
-      _hasSetBudget = loadedUser.budget != AppConstants.defaultBudget;
-      _isLoading = false;
-      
-      print('DEBUG: UserProvider.loadUserData() - loaded user: ${_user?.name}, budget: ${_user?.budget}, avatar: ${_user?.avatar}');
-      print('DEBUG: UserProvider.loadUserData() - user age: ${_user?.age}');
-      print('DEBUG: UserProvider.loadUserData() - hasSetBudget: $_hasSetBudget');
       
     } catch (e) {
       print('DEBUG: UserProvider.loadUserData() - error loading user: $e');
       // Create default user if loading fails
       _user = _createDefaultUser();
-      _hasSetBudget = false; // Default user hasn't set budget
+      _hasSetBudget = false;
       _isLoading = false;
       print('DEBUG: UserProvider.loadUserData() - created default user with budget: ${_user?.budget}');
     }
@@ -80,7 +100,39 @@ class UserProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  User _createDefaultUser() => User(
+  /// Create user data for new Firebase user
+  Future<void> createUserForFirebaseUser(String name, String email) async {
+    print('DEBUG: UserProvider.createUserForFirebaseUser() called with name: $name, email: $email');
+    
+    final newUser = app_user.User(
+      name: name,
+      email: email,
+      height: AppConstants.defaultHeight,
+      weight: AppConstants.defaultWeight,
+      age: AppConstants.defaultAge,
+      gender: AppConstants.defaultGender,
+      activityLevel: AppConstants.defaultActivityLevel,
+      goal: AppConstants.defaultGoal,
+      avatar: AppConstants.defaultAvatar,
+      loginCount: 1,
+      lastLogin: DateTime.now().toString(),
+      completedGoals: 0,
+      budget: AppConstants.defaultBudget,
+      notificationCount: AppConstants.defaultNotificationCount,
+    );
+    
+    _user = newUser;
+    _cachedLastLogin = newUser.lastLogin;
+    _hasSetBudget = false;
+    
+    // Save to Firebase
+    await FirebaseService.saveUser(newUser);
+    print('DEBUG: UserProvider.createUserForFirebaseUser() - created and saved new user to Firebase');
+    
+    notifyListeners();
+  }
+
+  app_user.User _createDefaultUser() => app_user.User(
         name: AppConstants.defaultName,
         email: AppConstants.defaultEmail,
         height: AppConstants.defaultHeight,
@@ -98,7 +150,7 @@ class UserProvider extends ChangeNotifier {
       );
 
   /// Update user data
-  Future<void> updateUser(User updatedUser) async {
+  Future<void> updateUser(app_user.User updatedUser) async {
     print('DEBUG: UserProvider.updateUser() called with budget: ${updatedUser.budget}');
     print('DEBUG: UserProvider.updateUser() - current _user budget: ${_user?.budget}');
     print('DEBUG: UserProvider.updateUser() - _user == updatedUser: ${_user == updatedUser}');
@@ -115,9 +167,9 @@ class UserProvider extends ChangeNotifier {
     
     print('DEBUG: UserProvider.updateUser() - _user updated, new budget: ${_user?.budget}');
     
-    // Save to storage
-    await StorageService.saveUser(updatedUser);
-    print('DEBUG: UserProvider.updateUser() - user saved to storage, budget: ${_user?.budget}');
+    // Save to Firebase
+    await FirebaseService.saveUser(updatedUser);
+    print('DEBUG: UserProvider.updateUser() - user saved to Firebase, budget: ${_user?.budget}');
   }
 
   /// Update specific user field
@@ -151,7 +203,7 @@ class UserProvider extends ChangeNotifier {
       }
     }
 
-    User updatedUser = _user!.copyWith(
+    app_user.User updatedUser = _user!.copyWith(
       name: name ?? _user!.name,
       email: email ?? _user!.email,
       height: height ?? _user!.height,
@@ -177,7 +229,7 @@ class UserProvider extends ChangeNotifier {
     print('DEBUG: UserProvider.setAvatar() called with: $newAvatar');
     print('DEBUG: UserProvider.setAvatar() - current avatar: ${_user?.avatar}');
     
-    // Save to SharedPreferences first
+    // Save to SharedPreferences first (keep this local for now)
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('selected_avatar', newAvatar);
     print('DEBUG: UserProvider.setAvatar() - saved to SharedPreferences: $newAvatar');
@@ -220,7 +272,7 @@ class UserProvider extends ChangeNotifier {
 
   /// Clear all user data
   Future<void> clearUserData() async {
-    await StorageService.clearAll();
+    await FirebaseService.clearAllUserData();
     _user = null;
     _cachedLastLogin = null;
     notifyListeners();

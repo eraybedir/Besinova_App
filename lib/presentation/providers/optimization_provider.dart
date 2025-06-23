@@ -4,6 +4,7 @@ import '../../data/models/product.dart';
 import '../../data/models/optimization_result.dart';
 import '../../data/models/shopping_item.dart';
 import '../../data/services/optimization_service.dart';
+import '../../data/services/firebase_service.dart';
 
 /// Provider for managing optimization state and results
 class OptimizationProvider extends ChangeNotifier {
@@ -18,6 +19,27 @@ class OptimizationProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get hasOptimizationResults => _shoppingItems.isNotEmpty;
+
+  /// Initialize shopping list from Firebase
+  Future<void> loadShoppingList() async {
+    try {
+      final items = await FirebaseService.loadShoppingList();
+      _shoppingItems = items;
+      notifyListeners();
+    } catch (e) {
+      print('Error loading shopping list from Firebase: $e');
+      // Keep existing items if Firebase fails
+    }
+  }
+
+  /// Save shopping list to Firebase
+  Future<void> _saveShoppingList() async {
+    try {
+      await FirebaseService.saveShoppingList(_shoppingItems);
+    } catch (e) {
+      print('Error saving shopping list to Firebase: $e');
+    }
+  }
 
   /// Get filtered shopping items by category
   List<ShoppingItem> getShoppingItemsByCategory(String category) {
@@ -71,6 +93,9 @@ class OptimizationProvider extends ChangeNotifier {
       _optimizationResult = result;
       _shoppingItems = List.from(result?.shoppingItems ?? []);
       
+      // Save to Firebase
+      await _saveShoppingList();
+      
       notifyListeners();
     } catch (e) {
       _setError('Optimization failed: $e');
@@ -86,6 +111,7 @@ class OptimizationProvider extends ChangeNotifier {
       _shoppingItems[index] = _shoppingItems[index].copyWith(
         isChecked: !_shoppingItems[index].isChecked,
       );
+      _saveShoppingList();
       notifyListeners();
     }
   }
@@ -95,6 +121,7 @@ class OptimizationProvider extends ChangeNotifier {
     final index = _shoppingItems.indexWhere((item) => item.id == itemId);
     if (index != -1 && quantity > 0) {
       _shoppingItems[index] = _shoppingItems[index].copyWith(quantity: quantity);
+      _saveShoppingList();
       notifyListeners();
     }
   }
@@ -102,12 +129,14 @@ class OptimizationProvider extends ChangeNotifier {
   /// Remove item from shopping list
   void removeItem(String itemId) {
     _shoppingItems.removeWhere((item) => item.id == itemId);
+    _saveShoppingList();
     notifyListeners();
   }
 
   /// Clear all items from shopping list
   void clearShoppingList() {
     _shoppingItems.clear();
+    _saveShoppingList();
     notifyListeners();
   }
 

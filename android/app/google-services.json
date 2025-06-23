@@ -1,36 +1,26 @@
 {
   "project_info": {
-    "project_number": "123456789012",
+    "project_number": "236000084709",
     "project_id": "besinova-app",
-    "storage_bucket": "besinova-app.appspot.com"
+    "storage_bucket": "besinova-app.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:123456789012:android:abcdef1234567890",
+        "mobilesdk_app_id": "1:236000084709:android:6b378b45eca51cc3c18a0c",
         "android_client_info": {
           "package_name": "com.example.besinova"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "123456789012-abcdefghijklmnopqrstuvwxyz123456.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          "current_key": "AIzaSyBCej-UtTlm2C4nCwcyFDOByVwlIb58-GQ"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "123456789012-abcdefghijklmnopqrstuvwxyz123456.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }

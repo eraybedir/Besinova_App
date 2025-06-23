@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/product.dart';
+import 'firebase_service.dart';
 
 /// Service for managing favorite products
 class FavoritesService {
@@ -24,15 +25,17 @@ class FavoritesService {
   static Future<bool> addToFavorites(Product product) async {
     try {
       await init();
-      List<Product> favorites = await getFavorites();
       
-      // Check if product is already in favorites
-      if (favorites.any((p) => p.id == product.id)) {
-        return false; // Already in favorites
+      // Add to Firebase
+      await FirebaseService.addToFavorites(product.name);
+      
+      // Keep local cache for offline access
+      List<Product> favorites = await getFavorites();
+      if (!favorites.any((p) => p.id == product.id)) {
+        favorites.add(product);
+        await _saveFavorites(favorites);
       }
       
-      favorites.add(product);
-      await _saveFavorites(favorites);
       return true;
     } catch (e) {
       print('Error adding to favorites: $e');
@@ -44,10 +47,18 @@ class FavoritesService {
   static Future<bool> removeFromFavorites(int productId) async {
     try {
       await init();
-      List<Product> favorites = await getFavorites();
       
+      // Get product name to remove from Firebase
+      List<Product> favorites = await getFavorites();
+      final product = favorites.firstWhere((p) => p.id == productId);
+      
+      // Remove from Firebase
+      await FirebaseService.removeFromFavorites(product.name);
+      
+      // Remove from local cache
       favorites.removeWhere((product) => product.id == productId);
       await _saveFavorites(favorites);
+      
       return true;
     } catch (e) {
       print('Error removing from favorites: $e');
@@ -59,14 +70,33 @@ class FavoritesService {
   static Future<List<Product>> getFavorites() async {
     try {
       await init();
-      final String? favoritesJson = prefs.getString(_favoritesKey);
       
-      if (favoritesJson == null || favoritesJson.isEmpty) {
-        return [];
+      // Try to get from Firebase first
+      try {
+        List<String> favoriteNames = await FirebaseService.loadFavorites();
+        
+        // Convert names back to Product objects (you might need to implement this)
+        // For now, we'll use local storage as fallback
+        final String? favoritesJson = prefs.getString(_favoritesKey);
+        
+        if (favoritesJson == null || favoritesJson.isEmpty) {
+          return [];
+        }
+        
+        final List<dynamic> favoritesList = json.decode(favoritesJson);
+        return favoritesList.map((json) => Product.fromJson(json)).toList();
+      } catch (e) {
+        print('Error loading from Firebase, using local cache: $e');
+        // Fallback to local storage
+        final String? favoritesJson = prefs.getString(_favoritesKey);
+        
+        if (favoritesJson == null || favoritesJson.isEmpty) {
+          return [];
+        }
+        
+        final List<dynamic> favoritesList = json.decode(favoritesJson);
+        return favoritesList.map((json) => Product.fromJson(json)).toList();
       }
-      
-      final List<dynamic> favoritesList = json.decode(favoritesJson);
-      return favoritesList.map((json) => Product.fromJson(json)).toList();
     } catch (e) {
       print('Error getting favorites: $e');
       return [];
@@ -104,6 +134,11 @@ class FavoritesService {
   static Future<bool> clearFavorites() async {
     try {
       await init();
+      
+      // Clear from Firebase
+      await FirebaseService.saveFavorites([]);
+      
+      // Clear local cache
       await prefs.remove(_favoritesKey);
       return true;
     } catch (e) {
@@ -112,7 +147,7 @@ class FavoritesService {
     }
   }
 
-  /// Save favorites to SharedPreferences
+  /// Save favorites to SharedPreferences (local cache)
   static Future<void> _saveFavorites(List<Product> favorites) async {
     final List<Map<String, dynamic>> favoritesJson = 
         favorites.map((product) => product.toJson()).toList();

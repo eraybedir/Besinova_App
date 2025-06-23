@@ -91,13 +91,6 @@ class StorageService {
     return user;
   }
 
-  /// Check if user has an account
-  static Future<bool> hasAccount() async {
-    final email = prefs.getString('user_email');
-    final password = prefs.getString('user_password');
-    return email != null && password != null;
-  }
-
   /// Save specific user field
   static Future<void> saveUserField(String key, dynamic value) async {
     switch (value.runtimeType) {

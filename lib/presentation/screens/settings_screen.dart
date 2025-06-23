@@ -7,6 +7,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import '../../presentation/presentation.dart';
 import 'signin_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../core/constants/app_colors.dart';
+import '../../presentation/providers/user_provider.dart';
+import '../../presentation/providers/theme_provider.dart';
+import '../../presentation/providers/optimization_provider.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -286,13 +291,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
-    if (context.mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const SignInScreen()),
-      );
+    try {
+      // Sign out from Firebase
+      await FirebaseAuth.instance.signOut();
+      
+      // Clear local storage
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+      
+      // Clear user provider data
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      await userProvider.clearUserData();
+      
+      // Clear optimization provider data
+      final optimizationProvider = Provider.of<OptimizationProvider>(context, listen: false);
+      optimizationProvider.clearShoppingList();
+      
+      if (context.mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const SignInScreen()),
+        );
+      }
+    } catch (e) {
+      print('Error during logout: $e');
+      // Still try to navigate to sign in screen even if logout fails
+      if (context.mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const SignInScreen()),
+        );
+      }
     }
   }
 

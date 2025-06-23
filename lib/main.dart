@@ -19,10 +19,14 @@ import 'presentation/screens/signup_screen.dart';
 import 'presentation/screens/optimization_test_screen.dart';
 import 'data/services/optimization_service.dart';
 import 'data/services/notification_service.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 void main() async {
   // Ensure Flutter bindings are initialized
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase
+  await Firebase.initializeApp();
 
   // Set up global error handling
   FlutterError.onError = (FlutterErrorDetails details) {

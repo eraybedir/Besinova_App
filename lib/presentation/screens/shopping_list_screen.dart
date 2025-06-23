@@ -32,6 +32,11 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     super.initState();
     // Use the actual categories from the product data
     categories = ['Tümü', 'Meyve & Sebze', 'Süt & Kahvaltı', 'Et & Tavuk', 'Bakliyat', 'Temel Gıda'];
+    
+    // Load shopping list from Firebase
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<OptimizationProvider>().loadShoppingList();
+    });
   }
 
   void _runOptimization() {
